@@ -164,10 +164,20 @@ const PlanComentariosAdicionalesSchema = z.object({
   riesgoAnestesicoQuirurgico: RiesgoAnestesicoQuirurgicoSchema.optional(),
   volumenSanguineoCirculante: z.string().optional(),
   sangradoPermisible: z.string().optional(),
+});
+
+const PlanAnestesicoSchema = z.object({
   planAnestesico: z.string().optional(),
+});
+
+const IndicacionesAnestesicasSchema = z.object({
   indicacionesAnestesicas: z.string().optional(),
+});
+
+const ComentarioBibliograficoSchema = z.object({
   comentarioBibliografico: z.string().optional(),
 });
+
 
 const TranscribeMedicalInterviewOutputSchema = z.object({
   hospitalInfo: HospitalInfoSchema.optional().describe('Información del hospital y servicio.'),
@@ -182,6 +192,9 @@ const TranscribeMedicalInterviewOutputSchema = z.object({
   laboratoriosEstudios: LaboratoriosEstudiosSchema.optional().describe('Resultados de pruebas de laboratorio e imagen.'),
   valoracionOtrosServicios: ValoracionOtrosServiciosSchema.optional().describe('Resumen de valoraciones por otras especialidades.'),
   planComentariosAdicionales: PlanComentariosAdicionalesSchema.optional().describe('Plan de tratamiento y comentarios adicionales.'),
+  planAnestesico: PlanAnestesicoSchema.optional().describe('Plan anestésico detallado.'),
+  indicacionesAnestesicas: IndicacionesAnestesicasSchema.optional().describe('Indicaciones anestésicas específicas.'),
+  comentarioBibliografico: ComentarioBibliograficoSchema.optional().describe('Comentarios bibliográficos relevantes.'),
 });
 
 export type TranscribeMedicalInterviewOutput = z.infer<
@@ -217,3 +230,5 @@ const transcribeMedicalInterviewFlow = ai.defineFlow(
     return output!;
   }
 );
+
+    

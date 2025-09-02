@@ -173,11 +173,23 @@ Riesgo Anestésico Quirúrgico:
   IPID: 
   NARCO SS: 
 Volumen Sanguíneo Circulante: 
-Sangrado Permisible: 
-Plan Anestésico: 
-Indicaciones Anestésicas: 
-Comentario Bibliográfico: `,
+Sangrado Permisible: `,
     },
+    {
+      id: 'planAnestesico',
+      title: 'Plan Anestésico',
+      content: 'Plan Anestésico: ',
+    },
+    {
+      id: 'indicacionesAnestesicas',
+      title: 'Indicaciones Anestésicas',
+      content: 'Indicaciones Anestésicas: ',
+    },
+    {
+      id: 'comentarioBibliografico',
+      title: 'Comentario Bibliográfico',
+      content: 'Comentario Bibliográfico: ',
+    }
 ];
 
 export interface MedicalSection {
@@ -189,13 +201,20 @@ export interface MedicalSection {
 // Helper to format a string from a nested object for display
 function formatContent(data: any, indent = ''): string {
     if (!data) return '';
+    if (typeof data !== 'object') {
+        return `${indent}${data}`;
+    }
     return Object.entries(data)
         .map(([key, value]) => {
             const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
             if (value && typeof value === 'object' && !Array.isArray(value)) {
                 return `${indent}${formattedKey}:\n${formatContent(value, `${indent}  `)}`;
             }
-            return `${indent}${formattedKey}: ${value || ''}`;
+            if (value) {
+                return `${indent}${formattedKey}: ${value}`;
+            }
+            return `${indent}${formattedKey}: `;
+
         })
         .join('\n');
 }
@@ -209,13 +228,8 @@ export default function Home() {
   const handleAllSectionsContentChange = (fullData: TranscribeMedicalInterviewOutput) => {
     const newSections = sections.map(section => {
       const sectionData = fullData[section.id as keyof TranscribeMedicalInterviewOutput];
-      if (sectionData && typeof sectionData === 'object') {
+       if (sectionData) {
         const content = formatContent(sectionData);
-        // Special handling for padecimientoActual to include somatometria
-        if (section.id === 'padecimientoActual' && fullData.somatometria) {
-            const somatometriaContent = formatContent(fullData.somatometria);
-            return { ...section, content: `${content}\n\nSomatometría:\n${somatometriaContent}` };
-        }
         return { ...section, content };
       }
       return section;
@@ -372,3 +386,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
