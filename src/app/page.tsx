@@ -11,16 +11,172 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { summarizeMedicalSection } from '@/ai/flows/summarize-medical-section';
 import { useToast } from '@/hooks/use-toast';
+import type { TranscribeMedicalInterviewOutput } from '@/ai/flows/transcribe-medical-interview';
 
 const initialSections: MedicalSection[] = [
-  { id: 'patientInfo', title: 'Información del Paciente', content: 'Nombre: \nEdad: \nSexo: ' },
-  { id: 'chiefComplaint', title: 'Motivo de Consulta', content: '' },
-  { id: 'presentIllness', title: 'Historia de la Enfermedad Actual', content: '' },
-  { id: 'pastHistory', title: 'Antecedentes Médicos', content: '' },
-  { id: 'familyHistory', title: 'Antecedentes Familiares', content: '' },
-  { id: 'physicalExam', title: 'Examen Físico', content: '' },
-  { id: 'diagnosis', title: 'Diagnóstico', content: '' },
-  { id: 'plan', title: 'Plan de Tratamiento', content: '' },
+    {
+        id: 'hospitalInfo',
+        title: 'Encabezado de la Institución y Servicio',
+        content: `Nombre del Hospital: 
+Servicio Médico: 
+Valorado en: 
+Cama: 
+Fecha: `,
+    },
+    {
+        id: 'datosPaciente',
+        title: 'Datos del Paciente',
+        content: `Nombre: 
+NSS: 
+Edad: 
+Sexo: 
+Fecha de Ingreso: 
+Diagnóstico: 
+Procedimiento: `,
+    },
+    {
+        id: 'antecedentesHeredofamiliares',
+        title: 'Antecedentes Heredofamiliares',
+        content: `Madre:
+  Edad: 
+  Lugar de origen y residencia: 
+  Escolaridad: 
+  Estado civil: 
+  Ocupación: 
+  Enfermedades crónico-degenerativas: 
+  Hemotipo: 
+  Toxicomanías: 
+  Medicamentos: 
+Padre:
+  Edad: 
+  Lugar de origen y residencia: 
+  Escolaridad: 
+  Estado civil: 
+  Ocupación: 
+  Enfermedades crónico-degenerativas: 
+  Hemotipo: 
+  Toxicomanías: 
+  Medicamentos: 
+Hermanos: 
+Rama Materna: 
+Rama Paterna: 
+Consanguinidad: `,
+    },
+    {
+        id: 'antecedentesPerinatales',
+        title: 'Antecedentes Perinatales',
+        content: `Prenatales:
+  Número de gesta: 
+  Edad materna: 
+  Control prenatal: 
+  Ultrasonidos: 
+  Ingestión de suplementos: 
+  VDRL/VIH: 
+  Amenazas de aborto/parto: 
+  Patologías gestacionales: 
+Natales:
+  Tipo de parto: 
+  Peso: 
+  Talla: 
+  Apgar: 
+  Complicaciones: 
+Postnatales:
+  Complicaciones: 
+  Tiempo de egreso: 
+Desarrollo Psicomotor: 
+Tamiz Neonatal:
+  Auditivo: 
+  Cardiológico: 
+  Metabólico: `,
+    },
+    {
+        id: 'antecedentesPersonalesNoPatologicos',
+        title: 'Antecedentes Personales No Patológicos',
+        content: `Vivienda: 
+Higiene: 
+Alimentación: 
+Inmunizaciones: 
+Cuidador Principal: 
+Hemotipo: 
+Escolaridad: `,
+    },
+    {
+        id: 'antecedentesPersonalesPatologicos',
+        title: 'Antecedentes Personales Patológicos',
+        content: `Enfermedades crónico-degenerativas: 
+Alergias: 
+Alergia al látex: 
+Convulsiones: 
+Asma/broncoespasmos: 
+Enfermedades exantemáticas: 
+Quirúrgicos: 
+Traumatismos: 
+Intoxicaciones: 
+Transfusiones: 
+Hospitalizaciones previas: 
+IVRS (Infecciones de Vías Respiratorias Superiores): 
+Medicamentos actuales: `,
+    },
+    {
+        id: 'padecimientoActual',
+        title: 'Padecimiento Actual',
+        content: `Descripción del padecimiento: 
+Somatometría
+  Talla: 
+  Peso real: 
+  Tensión arterial: 
+  Frecuencia cardiaca: 
+  Frecuencia respiratoria: 
+  Temperatura: 
+  Saturación O2: 
+  Superficie corporal: `,
+    },
+    {
+        id: 'exploracionFisica',
+        title: 'Exploración Física',
+        content: `Descripción general del paciente: 
+Piel y tegumentos: 
+Cráneo: 
+Boca/faringe: 
+Vía aérea: 
+Cuello: 
+Tórax: 
+Abdomen: 
+Genitales: 
+Extremidades: 
+Columna vertebral: 
+Accesos vasculares: `,
+    },
+    {
+        id: 'laboratoriosEstudios',
+        title: 'Laboratorios y Estudios',
+        content: `Biometría Hemática: 
+Tiempos de Coagulación: 
+Otros valores hematológicos: 
+Estudios de Gabinete: `,
+    },
+    {
+        id: 'valoracionOtrosServicios',
+        title: 'Valoración por Otros Servicios',
+        content: `Resumen de las valoraciones de otras especialidades: `,
+    },
+    {
+        id: 'planComentariosAdicionales',
+        title: 'Plan y Comentarios Adicionales',
+        content: `Espacio Libre para Información Adicional: 
+Manejo Médico de su Servicio: 
+Riesgo Anestésico Quirúrgico:
+  ASA: 
+  RAQ: 
+  CEPOD: 
+  IPID: 
+  NARCO SS: 
+Volumen Sanguíneo Circulante: 
+Sangrado Permisible: 
+Plan Anestésico: 
+Indicaciones Anestésicas: 
+Comentario Bibliográfico: `,
+    },
 ];
 
 export interface MedicalSection {
@@ -29,12 +185,36 @@ export interface MedicalSection {
   content: string;
 }
 
+// Helper to format a string from a nested object for display
+function formatContent(data: any, indent = ''): string {
+    return Object.entries(data)
+        .map(([key, value]) => {
+            const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
+            if (value && typeof value === 'object' && !Array.isArray(value)) {
+                return `${indent}${formattedKey}:\n${formatContent(value, `${indent}  `)}`;
+            }
+            return `${indent}${formattedKey}: ${value || ''}`;
+        })
+        .join('\n');
+}
+
 export default function Home() {
   const [sections, setSections] = useState<MedicalSection[]>(initialSections);
   const [isLoadingPdf, setIsLoadingPdf] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState<string | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  const handleAllSectionsContentChange = (fullData: TranscribeMedicalInterviewOutput) => {
+    const newSections = sections.map(section => {
+      const sectionData = fullData[section.id as keyof TranscribeMedicalInterviewOutput];
+      if (sectionData && typeof sectionData === 'object') {
+        return { ...section, content: formatContent(sectionData) };
+      }
+      return section;
+    });
+    setSections(newSections);
+  };
 
   const handleSectionContentChange = (id: string, newContent: string) => {
     setSections(prevSections =>
@@ -168,6 +348,7 @@ export default function Home() {
                   key={section.id}
                   section={section}
                   onContentChange={handleSectionContentChange}
+                  onAllSectionsContentChange={handleAllSectionsContentChange}
                   onTitleChange={handleSectionTitleChange}
                   onDelete={handleDeleteSection}
                   onSummarize={handleSummarizeSection}

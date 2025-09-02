@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import type { MedicalSection } from '@/app/page';
-import { transcribeMedicalInterview } from '@/ai/flows/transcribe-medical-interview';
+import { transcribeMedicalInterview, TranscribeMedicalInterviewOutput } from '@/ai/flows/transcribe-medical-interview';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,6 +13,7 @@ import { Mic, Square, Loader2, Clipboard, Check, Trash2, Edit, Save, BrainCircui
 interface MedicalFormSectionProps {
   section: MedicalSection;
   onContentChange: (id: string, newContent: string) => void;
+  onAllSectionsContentChange: (fullData: TranscribeMedicalInterviewOutput) => void;
   onTitleChange: (id: string, newTitle: string) => void;
   onDelete: (id: string) => void;
   onSummarize: (id: string) => void;
@@ -22,7 +23,7 @@ interface MedicalFormSectionProps {
   isLast: boolean;
 }
 
-export function MedicalFormSection({ section, onContentChange, onTitleChange, onDelete, onSummarize, isSummarizing, onMove, isFirst, isLast }: MedicalFormSectionProps) {
+export function MedicalFormSection({ section, onContentChange, onAllSectionsContentChange, onTitleChange, onDelete, onSummarize, isSummarizing, onMove, isFirst, isLast }: MedicalFormSectionProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -55,9 +56,11 @@ export function MedicalFormSection({ section, onContentChange, onTitleChange, on
           const base64Audio = reader.result as string;
           try {
             const result = await transcribeMedicalInterview({ audioDataUri: base64Audio });
-            const existingContent = section.content.trim();
-            const newContent = existingContent ? `${existingContent}\n${result.transcription}` : result.transcription;
-            onContentChange(section.id, newContent);
+            onAllSectionsContentChange(result);
+            toast({
+              title: 'Transcripción Completa',
+              description: 'El formulario ha sido actualizado con la información del audio.',
+            });
           } catch (error) {
             console.error('Transcription failed:', error);
             toast({
@@ -173,11 +176,11 @@ export function MedicalFormSection({ section, onContentChange, onTitleChange, on
             <div className='flex flex-col gap-2'>
               <Button onClick={handleToggleRecording} variant="outline" size="sm" disabled={isTranscribing || isSummarizing}>
                 {isRecording ? <Square className="mr-2 h-4 w-4 text-red-500 fill-current" /> : <Mic className="mr-2 h-4 w-4" />}
-                {isRecording ? 'Detener' : 'Grabar'}
+                {isRecording ? 'Detener' : 'Grabar y Rellenar'}
               </Button>
               <Button onClick={() => onSummarize(section.id)} variant="outline" size="sm" disabled={isTranscribing || isSummarizing || !section.content}>
                 {isSummarizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
-                Resumir
+                Resumir Sección
               </Button>
             </div>
             <div className="flex items-center gap-4 h-9">
@@ -193,7 +196,7 @@ export function MedicalFormSection({ section, onContentChange, onTitleChange, on
               {(isTranscribing || isSummarizing) && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="animate-spin h-4 w-4" />
-                  {isTranscribing ? 'Transcribiendo...' : 'Resumiendo...'}
+                  {isTranscribing ? 'Transcribiendo y rellenando...' : 'Resumiendo...'}
                 </div>
               )}
             </div>
@@ -203,7 +206,7 @@ export function MedicalFormSection({ section, onContentChange, onTitleChange, on
               value={section.content}
               onChange={(e) => onContentChange(section.id, e.target.value)}
               placeholder={`Haga clic en 'Grabar' para transcribir o escriba aquí...`}
-              rows={8}
+              rows={12}
               className="pr-12 text-base"
               disabled={isTranscribing || isSummarizing}
             />
