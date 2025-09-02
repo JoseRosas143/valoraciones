@@ -13,54 +13,34 @@ import { useToast } from '@/hooks/use-toast';
 
 // Custom BonicaScribe Logo Component
 const BonicaScribeLogo = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    viewBox="0 0 100 100"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M85.34,64.21A40,40,0,1,1,95,50"
-      stroke="currentColor"
-      strokeWidth="4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M50,75V35"
-      stroke="currentColor"
-      strokeWidth="4"
-      strokeLinecap="round"
-    />
-    <path
-      d="M58,51s-4-3-4-6,4-6,4-6"
-      stroke="currentColor"
-      strokeWidth="4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M42,63s4,3,4,6-4,6-4,6"
-      stroke="currentColor"
-      strokeWidth="4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-     <path
-      d="M46,45a10.5,10.5,0,1,0,0,18"
-      stroke="currentColor"
-      strokeWidth="4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M54,71.5a10.5,10.5,0,1,0,0-18"
-      stroke="currentColor"
-      strokeWidth="4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
+    <svg
+      className={className}
+      viewBox="0 0 100 100"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style={{stopColor: '#A0CFEC', stopOpacity: 1}} />
+          <stop offset="100%" style={{stopColor: '#68A4C4', stopOpacity: 1}} />
+        </linearGradient>
+      </defs>
+      <circle cx="50" cy="50" r="48" fill="url(#logoGradient)" stroke="#E0E0E0" strokeWidth="2"/>
+      <path
+        d="M42,68 C50,60 52,55 52,50 C52,45 50,40 42,32 M60,68 C52,60 50,55 50,50 C50,45 52,40 60,32"
+        stroke="white"
+        strokeWidth="5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+       <path
+        d="M40,50 h20"
+        stroke="white"
+        strokeWidth="5"
+        strokeLinecap="round"
+      />
+    </svg>
 );
 
 export default function LoginPage() {
@@ -103,8 +83,8 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center p-4 login-page-bg">
       <Card className="w-full max-w-sm bg-card/80 backdrop-blur-sm">
         <CardHeader className="text-center">
-          <BonicaScribeLogo className="mx-auto h-12 w-12 text-primary" />
-          <CardTitle className="mt-4 text-2xl font-bold">BonicaScribe Assist</CardTitle>
+          <BonicaScribeLogo className="mx-auto h-16 w-16 text-primary" />
+          <CardTitle className="mt-4 text-2xl font-bold">BonicaScribe</CardTitle>
           <CardDescription>
             {isSigningUp ? 'Crea una cuenta para empezar' : 'Inicia sesión para continuar'}
           </CardDescription>
