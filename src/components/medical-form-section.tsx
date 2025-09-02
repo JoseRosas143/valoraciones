@@ -6,18 +6,25 @@ import { transcribeMedicalInterview } from '@/ai/flows/transcribe-medical-interv
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, Square, Loader2, Clipboard, Check } from 'lucide-react';
+import { Mic, Square, Loader2, Clipboard, Check, Trash2, Edit, Save, BrainCircuit } from 'lucide-react';
 
 interface MedicalFormSectionProps {
   section: MedicalSection;
   onContentChange: (id: string, newContent: string) => void;
+  onTitleChange: (id: string, newTitle: string) => void;
+  onDelete: (id: string) => void;
+  onSummarize: (id: string) => void;
+  isSummarizing: boolean;
 }
 
-export function MedicalFormSection({ section, onContentChange }: MedicalFormSectionProps) {
+export function MedicalFormSection({ section, onContentChange, onTitleChange, onDelete, onSummarize, isSummarizing }: MedicalFormSectionProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editableTitle, setEditableTitle] = useState(section.title);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const { toast } = useToast();
@@ -46,7 +53,7 @@ export function MedicalFormSection({ section, onContentChange }: MedicalFormSect
           try {
             const result = await transcribeMedicalInterview({ audioDataUri: base64Audio });
             const existingContent = section.content.trim();
-            const newContent = existingContent ? `${existingContent}\n${result.transcription}` : result.transcription;
+            const newContent = existingContent ? `${existingContent}\\n${result.transcription}` : result.transcription;
             onContentChange(section.id, newContent);
           } catch (error) {
             console.error('Transcription failed:', error);
@@ -59,7 +66,6 @@ export function MedicalFormSection({ section, onContentChange }: MedicalFormSect
             setIsTranscribing(false);
           }
         };
-        // Clean up stream tracks
         stream.getTracks().forEach(track => track.stop());
       };
 
@@ -97,6 +103,21 @@ export function MedicalFormSection({ section, onContentChange }: MedicalFormSect
     }
   };
 
+  const handleTitleEditToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isEditingTitle) {
+      onTitleChange(section.id, editableTitle);
+    }
+    setIsEditingTitle(!isEditingTitle);
+  };
+  
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      onTitleChange(section.id, editableTitle);
+      setIsEditingTitle(false);
+    }
+  }
+
   useEffect(() => {
     return () => {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
@@ -107,31 +128,60 @@ export function MedicalFormSection({ section, onContentChange }: MedicalFormSect
 
   return (
     <AccordionItem value={section.id} className="bg-card border-none rounded-lg shadow-sm overflow-hidden">
-      <AccordionTrigger className="px-6 py-4 text-lg font-semibold hover:no-underline data-[state=open]:border-b">
-        {section.title}
+        <AccordionTrigger className="px-6 py-4 text-lg font-semibold hover:no-underline data-[state=open]:border-b">
+            <div className="flex items-center gap-2 w-full">
+                {isEditingTitle ? (
+                    <Input 
+                        value={editableTitle}
+                        onChange={(e) => setEditableTitle(e.target.value)}
+                        onKeyDown={handleTitleKeyDown}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-lg font-semibold"
+                        autoFocus
+                    />
+                ) : (
+                    <span className="flex-1 text-left">{section.title}</span>
+                )}
+                <Button variant="ghost" size="icon" onClick={handleTitleEditToggle} className="h-8 w-8">
+                    {isEditingTitle ? <Save className="h-5 w-5" /> : <Edit className="h-5 w-5" />}
+                    <span className="sr-only">{isEditingTitle ? 'Save title' : 'Edit title'}</span>
+                </Button>
+                <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); onDelete(section.id)}} className="h-8 w-8 text-destructive/70 hover:text-destructive">
+                    <Trash2 className="h-5 w-5" />
+                    <span className="sr-only">Delete section</span>
+                </Button>
+            </div>
       </AccordionTrigger>
       <AccordionContent className="px-6 pb-6 pt-4">
         <div className="space-y-4">
-          <div className="flex items-center gap-4 h-6">
-            <Button onClick={handleToggleRecording} variant="outline" size="sm" disabled={isTranscribing}>
-              {isRecording ? <Square className="mr-2 h-4 w-4 text-red-500 fill-current" /> : <Mic className="mr-2 h-4 w-4" />}
-              {isRecording ? 'Detener' : 'Grabar'}
-            </Button>
-            {isRecording && (
-              <div className="flex items-center gap-2 text-sm text-red-500">
-                <span className="relative flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                </span>
-                Grabando...
-              </div>
-            )}
-            {isTranscribing && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="animate-spin h-4 w-4" />
-                Transcribiendo...
-              </div>
-            )}
+          <div className="flex items-start gap-4">
+            <div className='flex flex-col gap-2'>
+              <Button onClick={handleToggleRecording} variant="outline" size="sm" disabled={isTranscribing || isSummarizing}>
+                {isRecording ? <Square className="mr-2 h-4 w-4 text-red-500 fill-current" /> : <Mic className="mr-2 h-4 w-4" />}
+                {isRecording ? 'Detener' : 'Grabar'}
+              </Button>
+              <Button onClick={() => onSummarize(section.id)} variant="outline" size="sm" disabled={isTranscribing || isSummarizing || !section.content}>
+                {isSummarizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
+                Resumir
+              </Button>
+            </div>
+            <div className="flex items-center gap-4 h-9">
+              {isRecording && (
+                <div className="flex items-center gap-2 text-sm text-red-500">
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                  </span>
+                  Grabando...
+                </div>
+              )}
+              {(isTranscribing || isSummarizing) && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="animate-spin h-4 w-4" />
+                  {isTranscribing ? 'Transcribiendo...' : 'Resumiendo...'}
+                </div>
+              )}
+            </div>
           </div>
           <div className="relative">
             <Textarea
@@ -140,7 +190,7 @@ export function MedicalFormSection({ section, onContentChange }: MedicalFormSect
               placeholder={`Haga clic en 'Grabar' para transcribir o escriba aquí...`}
               rows={8}
               className="pr-12 text-base"
-              disabled={isTranscribing}
+              disabled={isTranscribing || isSummarizing}
             />
             <Button onClick={handleCopy} variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 text-muted-foreground hover:text-foreground" disabled={!section.content}>
               <span className="sr-only">Copiar al portapapeles</span>

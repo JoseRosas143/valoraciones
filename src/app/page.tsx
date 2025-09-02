@@ -7,6 +7,10 @@ import html2canvas from 'html2canvas';
 import { Accordion } from '@/components/ui/accordion';
 import { Header } from '@/components/header';
 import { MedicalFormSection } from '@/components/medical-form-section';
+import { Button } from '@/components/ui/button';
+import { PlusCircle } from 'lucide-react';
+import { summarizeMedicalSection } from '@/ai/flows/summarize-medical-section';
+import { useToast } from '@/hooks/use-toast';
 
 const initialSections: MedicalSection[] = [
   { id: 'patientInfo', title: 'Información del Paciente', content: 'Nombre: \nEdad: \nSexo: ' },
@@ -28,7 +32,9 @@ export interface MedicalSection {
 export default function Home() {
   const [sections, setSections] = useState<MedicalSection[]>(initialSections);
   const [isLoadingPdf, setIsLoadingPdf] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState<string | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   const handleSectionContentChange = (id: string, newContent: string) => {
     setSections(prevSections =>
@@ -36,6 +42,47 @@ export default function Home() {
         section.id === id ? { ...section, content: newContent } : section
       )
     );
+  };
+  
+  const handleSectionTitleChange = (id: string, newTitle: string) => {
+    setSections(prevSections =>
+      prevSections.map(section =>
+        section.id === id ? { ...section, title: newTitle } : section
+      )
+    );
+  }
+
+  const handleDeleteSection = (id: string) => {
+    setSections(prevSections => prevSections.filter(section => section.id !== id));
+  }
+
+  const handleAddSection = () => {
+    const newSection: MedicalSection = {
+      id: `custom-${Date.now()}`,
+      title: 'Nueva Sección',
+      content: '',
+    };
+    setSections(prevSections => [...prevSections, newSection]);
+  };
+
+  const handleSummarizeSection = async (id: string) => {
+    const section = sections.find(s => s.id === id);
+    if (section && section.content) {
+      setIsSummarizing(id);
+      try {
+        const result = await summarizeMedicalSection({ sectionText: section.content });
+        handleSectionContentChange(id, result.summary);
+      } catch (error) {
+        console.error('Summarization failed:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error al Resumir',
+          description: 'No se pudo resumir el contenido. Por favor, inténtelo de nuevo.',
+        });
+      } finally {
+        setIsSummarizing(null);
+      }
+    }
   };
 
   const handleExportDoc = () => {
@@ -108,9 +155,19 @@ export default function Home() {
                   key={section.id}
                   section={section}
                   onContentChange={handleSectionContentChange}
+                  onTitleChange={handleSectionTitleChange}
+                  onDelete={handleDeleteSection}
+                  onSummarize={handleSummarizeSection}
+                  isSummarizing={isSummarizing === section.id}
                 />
               ))}
             </Accordion>
+             <div className="mt-6 text-center">
+                <Button onClick={handleAddSection} variant="outline">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Agregar Sección
+                </Button>
+            </div>
           </div>
         </div>
       </main>
