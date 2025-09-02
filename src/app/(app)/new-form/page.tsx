@@ -66,9 +66,11 @@ export default function NewFormPage() {
     const template = templates.find(t => t.id === templateId);
     if (template) {
         try {
-            const newForm = getInitialForm(template);
+            const initialForm = getInitialForm(template);
+             // Firestore generates the ID, so we don't save the 'id' field in the document.
+            const { id, ...newFormData } = initialForm;
             const formsRef = collection(db, 'users', user.uid, 'forms');
-            const docRef = await addDoc(formsRef, { ...newForm, id: undefined });
+            const docRef = await addDoc(formsRef, newFormData);
             router.push(`/forms/${docRef.id}`);
         } catch(e) {
             console.error("Error creating from template: ", e);

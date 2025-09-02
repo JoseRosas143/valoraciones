@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -72,9 +73,11 @@ export default function TemplatesPage() {
     const template = templates.find(t => t.id === templateId);
     if (template) {
         try {
-            const newForm = getInitialForm(template);
+            const initialForm = getInitialForm(template);
+            // Firestore generates the ID, so we don't save the 'id' field in the document.
+            const { id, ...newFormData } = initialForm;
             const formsRef = collection(db, 'users', user.uid, 'forms');
-            const docRef = await addDoc(formsRef, { ...newForm, id: undefined });
+            const docRef = await addDoc(formsRef, newFormData);
             router.push(`/forms/${docRef.id}`);
         } catch(error) {
              console.error("Error creating form from template: ", error);

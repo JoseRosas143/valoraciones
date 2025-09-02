@@ -63,9 +63,11 @@ export default function FormsPage() {
 
     setIsCreating(true);
     try {
-      const newForm = getInitialForm();
+      const initialForm = getInitialForm();
+      // Firestore generates the ID, so we don't save the 'id' field in the document.
+      const { id, ...newFormData } = initialForm;
       const formsRef = collection(db, 'users', user.uid, 'forms');
-      const docRef = await addDoc(formsRef, { ...newForm, id: undefined }); // Firestore generates ID
+      const docRef = await addDoc(formsRef, newFormData);
       router.push(`/forms/${docRef.id}`);
     } catch (error) {
       console.error("Error creating new form: ", error);
