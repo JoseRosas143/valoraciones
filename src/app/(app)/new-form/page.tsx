@@ -6,11 +6,11 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { MedicalForm } from '@/types/medical-form';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, query, where } from 'firebase/firestore';
+import { collection, getDocs, addDoc, query, where, doc, setDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { FilePlus, PlusSquare, Loader2, Gem } from 'lucide-react';
-import { getInitialForm } from '@/lib/forms-utils';
+import { getInitialForm, defaultTemplates, noteTemplate } from '@/lib/forms-utils';
 import { useToast } from '@/hooks/use-toast';
 
 const FREE_FORM_LIMIT = 4;
@@ -33,7 +33,15 @@ export default function NewFormPage() {
         const templatesQuery = query(templatesRef, where('isTemplate', '==', true));
         const templatesSnapshot = await getDocs(templatesQuery);
         const userTemplates = templatesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MedicalForm));
-        setTemplates(userTemplates);
+        
+        const templateMap = new Map(userTemplates.map(t => [t.id, t]));
+        if (!templateMap.has(defaultTemplates.id)) {
+            templateMap.set(defaultTemplates.id, defaultTemplates);
+        }
+        if (!templateMap.has(noteTemplate.id)) {
+            templateMap.set(noteTemplate.id, noteTemplate);
+        }
+        setTemplates(Array.from(templateMap.values()));
 
         // Fetch form count
         const formsRef = collection(db, 'users', user.uid, 'forms');
@@ -54,7 +62,6 @@ export default function NewFormPage() {
   const handleCreateFromTemplate = async (templateId: string) => {
     if (!user) return;
     
-    // Redirect to pricing if the limit is reached
     if (formCount >= FREE_FORM_LIMIT) {
         router.push('/pricing');
         return;
@@ -63,6 +70,12 @@ export default function NewFormPage() {
     const template = templates.find(t => t.id === templateId);
     if (template) {
         try {
+            const isDefault = template.id === 'default' || template.id === 'note';
+            if (isDefault) {
+              const userTemplateRef = doc(db, 'users', user.uid, 'forms', template.id);
+              await setDoc(userTemplateRef, template, { merge: true });
+            }
+
             const initialForm = getInitialForm(template);
             const { id, ...newFormData } = initialForm;
             const formsRef = collection(db, 'users', user.uid, 'forms');
@@ -122,7 +135,7 @@ export default function NewFormPage() {
                 <CardTitle>{template.name}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground mb-4">
                     {template.sections.length} secciones
                 </p>
                 <Button onClick={() => handleCreateFromTemplate(template.id)} className="mt-4 w-full" disabled={hasReachedLimit}>

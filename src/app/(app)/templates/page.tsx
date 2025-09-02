@@ -31,16 +31,18 @@ export default function TemplatesPage() {
         const querySnapshot = await getDocs(q);
         const userTemplates = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MedicalForm));
 
-        const finalTemplates = [...userTemplates];
-        // Add default templates to the list if they are not in the fetched data
-        if (!finalTemplates.some(t => t.id === defaultTemplates.id)) {
-            finalTemplates.unshift(defaultTemplates);
+        // Create a map of existing templates by ID for quick lookup
+        const templateMap = new Map(userTemplates.map(t => [t.id, t]));
+        
+        // Add default templates if they are not in the fetched data
+        if (!templateMap.has(defaultTemplates.id)) {
+            templateMap.set(defaultTemplates.id, defaultTemplates);
         }
-        if (!finalTemplates.some(t => t.id === noteTemplate.id)) {
-            finalTemplates.push(noteTemplate);
+        if (!templateMap.has(noteTemplate.id)) {
+            templateMap.set(noteTemplate.id, noteTemplate);
         }
         
-        setTemplates(finalTemplates);
+        setTemplates(Array.from(templateMap.values()));
       } catch (error) {
         console.error("Error fetching templates: ", error);
         toast({
@@ -61,20 +63,27 @@ export default function TemplatesPage() {
   const handleUseTemplate = async (templateId: string) => {
     if (!user) return;
     
-    let template = templates.find(t => t.id === templateId);
+    const template = templates.find(t => t.id === templateId);
 
     if (template) {
       try {
-        // If the template is a default one and doesn't exist in the user's DB, save it first.
+        // If the template is a default one (and thus doesn't have a Firestore ID yet for this user),
+        // we need to save it to the user's collection first to make it their own.
+        // We use setDoc to ensure the ID is 'default' or 'note' for the first time.
         const isDefault = template.id === 'default' || template.id === 'note';
+        const userTemplateRef = doc(db, 'users', user.uid, 'forms', template.id);
+        
+        // Check if this default template already exists for the user. If not, create it.
+        // This is a simplified check. A more robust way might involve a separate 'isDefault' flag.
+        // For now, this logic is okay.
         if (isDefault) {
-            const templateRef = doc(db, 'users', user.uid, 'forms', template.id);
-            // We use setDoc to ensure the ID is 'default' or 'note'
-            await setDoc(templateRef, template, { merge: true });
+           await setDoc(userTemplateRef, template, { merge: true });
         }
-
+        
         const initialForm = getInitialForm(template);
-        const { id, ...newFormData } = initialForm; // remove client-side id before saving
+        // Important: remove the template's ID before creating a new form document
+        const { id, ...newFormData } = initialForm; 
+        
         const formsRef = collection(db, 'users', user.uid, 'forms');
         const docRef = await addDoc(formsRef, newFormData);
         router.push(`/forms/${docRef.id}`);
@@ -83,6 +92,7 @@ export default function TemplatesPage() {
          toast({
             variant: 'destructive',
             title: 'Error al usar plantilla',
+            description: 'No se pudo crear un formulario desde esta plantilla.',
          });
       }
     }
