@@ -44,6 +44,7 @@ NSS:
 Edad: 
 Sexo: 
 Fecha de Ingreso: 
+Fecha de nacimiento:
 Diagnóstico: 
 Procedimiento: `,
     },
@@ -79,28 +80,12 @@ Consanguinidad: `,
         id: 'antecedentesPerinatales',
         title: 'Antecedentes Perinatales',
         content: `Prenatales:
-  Número de gesta: 
-  Edad materna: 
-  Control prenatal: 
-  Ultrasonidos: 
-  Ingestión de suplementos: 
-  VDRL/VIH: 
-  Amenazas de aborto/parto: 
-  Patologías gestacionales: 
+
 Natales:
-  Tipo de parto: 
-  Peso: 
-  Talla: 
-  Apgar: 
-  Complicaciones: 
-Postnatales:
-  Complicaciones: 
-  Tiempo de egreso: 
+
 Desarrollo Psicomotor: 
 Tamiz Neonatal:
-  Auditivo: 
-  Cardiológico: 
-  Metabólico: `,
+`,
     },
     {
         id: 'antecedentesPersonalesNoPatologicos',
@@ -377,5 +362,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

@@ -35,6 +35,7 @@ const DatosPacienteSchema = z.object({
   edad: z.string().optional(),
   sexo: z.string().optional(),
   fechaIngreso: z.string().optional(),
+  fechaNacimiento: z.string().optional(),
   diagnostico: z.string().optional(),
   procedimiento: z.string().optional(),
 });
@@ -216,5 +217,3 @@ const transcribeMedicalInterviewFlow = ai.defineFlow(
     return output!;
   }
 );
-
-    
