@@ -104,7 +104,7 @@ const AntecedentesPersonalesNoPatologicosSchema = z.object({
   alimentacion: z.string().optional(),
   inmunizaciones: z.string().optional(),
   cuidadorPrincipal: z.string().optional(),
-  hemotipo: zstring().optional(),
+  hemotipo: z.string().optional(),
   escolaridad: z.string().optional(),
 });
 const AntecedentesPersonalesPatologicosSchema = z.object({
