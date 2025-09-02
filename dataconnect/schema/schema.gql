@@ -1,17 +1,23 @@
+
 type Movie @table(name: "movies") {
   id: String! @pk
-  title: String!
+  title: String
   genre: String
   imageUrl: String
-  reviews: [Review] @relation(on: "movieId")
-  metadata: MovieMetadata @relation(on: "id")
+  metadata: MovieMetadata @embedded
+  reviews: [Review]! @relation(through: "reviews", from: "movieId", to: "userId")
 }
 
-type MovieMetadata @table(name: "movie_metadata") {
-  id: String! @pk
+type MovieMetadata {
   releaseYear: Int
-  description: String
   rating: Float
+  description: String
+}
+
+type User @table(name: "users") {
+  id: String! @pk
+  username: String
+  reviews: [Review]! @relation(through: "reviews", from: "userId", to: "movieId")
 }
 
 type Review @table(name: "reviews") {
@@ -19,13 +25,5 @@ type Review @table(name: "reviews") {
   movieId: String! @pk
   reviewText: String
   rating: Int
-  reviewDate: Timestamp! @default(expression: "CURRENT_TIMESTAMP")
-  user: User! @relation(on: "userId")
-  movie: Movie! @relation(on: "movieId")
-}
-
-type User @table(name: "users") {
-  id: String! @pk @auth(claim: "uid")
-  username: String!
-  reviews: [Review] @relation(on: "userId")
+  reviewDate: Timestamp
 }

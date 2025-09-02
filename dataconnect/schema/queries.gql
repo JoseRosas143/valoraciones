@@ -1,0 +1,63 @@
+query ListMovies {
+  movies {
+    id
+    title
+    imageUrl
+    genre
+  }
+}
+
+query ListUsers {
+  users {
+    id
+    username
+  }
+}
+
+query ListUserReviews {
+  user(id: "some-user-id") { # Example user ID, should be dynamic in practice
+    id
+    username
+    reviews {
+      rating
+      reviewDate
+      reviewText
+      movie {
+        id
+        title
+      }
+    }
+  }
+}
+
+query GetMovieById($id: String!) {
+  movie(id: $id) {
+    id
+    title
+    imageUrl
+    genre
+    metadata {
+      rating
+      releaseYear
+      description
+    }
+    reviews {
+      reviewText
+      reviewDate
+      rating
+      user {
+        id
+        username
+      }
+    }
+  }
+}
+
+query SearchMovie($titleInput: String, $genre: String) {
+  movies(filter: { title: { contains: $titleInput }, genre: { eq: $genre } }) {
+    id
+    title
+    genre
+    imageUrl
+  }
+}
