@@ -48,8 +48,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm">
+    <div className="flex min-h-screen items-center justify-center p-4 login-page-bg">
+      <Card className="w-full max-w-sm bg-card/80 backdrop-blur-sm">
         <CardHeader className="text-center">
           <Stethoscope className="mx-auto h-12 w-12 text-primary" />
           <CardTitle className="mt-4 text-2xl font-bold">MediScribe Assist</CardTitle>
