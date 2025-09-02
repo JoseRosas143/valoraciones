@@ -16,7 +16,7 @@ import {
 import { FileText, FilePlus, LayoutTemplate, Stethoscope, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, AuthProvider } from '@/hooks/use-auth';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 
