@@ -105,13 +105,11 @@ export default function LoginPage() {
         await signInWithGoogle();
         router.push('/forms');
     } catch (error: any) {
-        // This specific error code means the user closed the popup.
-        // We don't need to show an error message for this user action.
         if (error.code === 'auth/popup-closed-by-user') {
             console.log('Google Sign-In popup closed by user.');
+            setIsLoading(false);
             return;
         }
-
         console.error('Google Sign In error:', error);
         toast({
             variant: 'destructive',
@@ -119,7 +117,7 @@ export default function LoginPage() {
             description: error.message || 'No se pudo iniciar sesión con Google.',
         });
     } finally {
-        setIsLoading(false);
+      // Do not set isLoading to false here, as the page will redirect on success.
     }
   }
 
@@ -176,7 +174,7 @@ export default function LoginPage() {
           </div>
 
           <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading}>
-            <GoogleLogo className="mr-2 h-5 w-5" />
+            {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <GoogleLogo className="mr-2 h-5 w-5" />}
             Google
           </Button>
 

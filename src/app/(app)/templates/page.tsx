@@ -31,15 +31,16 @@ export default function TemplatesPage() {
         const querySnapshot = await getDocs(q);
         const userTemplates = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MedicalForm));
 
+        const finalTemplates = [...userTemplates];
         // Add default templates to the list if they are not in the fetched data
-        if (!userTemplates.some(t => t.id === defaultTemplates.id)) {
-            userTemplates.unshift(defaultTemplates);
+        if (!finalTemplates.some(t => t.id === defaultTemplates.id)) {
+            finalTemplates.unshift(defaultTemplates);
         }
-        if (!userTemplates.some(t => t.id === noteTemplate.id)) {
-            userTemplates.push(noteTemplate);
+        if (!finalTemplates.some(t => t.id === noteTemplate.id)) {
+            finalTemplates.push(noteTemplate);
         }
         
-        setTemplates(userTemplates);
+        setTemplates(finalTemplates);
       } catch (error) {
         console.error("Error fetching templates: ", error);
         toast({
@@ -59,29 +60,31 @@ export default function TemplatesPage() {
   
   const handleUseTemplate = async (templateId: string) => {
     if (!user) return;
+    
     let template = templates.find(t => t.id === templateId);
 
     if (template) {
-        try {
-            // If the template is a default one, ensure it's saved to the user's templates first.
-            if (template.id === 'default' || template.id === 'note') {
-                const templateRef = doc(db, 'users', user.uid, 'forms', template.id);
-                 // We need to use setDoc to ensure the ID is 'default' or 'note'
-                await setDoc(templateRef, template, { merge: true });
-            }
-
-            const initialForm = getInitialForm(template);
-            const { id, ...newFormData } = initialForm;
-            const formsRef = collection(db, 'users', user.uid, 'forms');
-            const docRef = await addDoc(formsRef, newFormData);
-            router.push(`/forms/${docRef.id}`);
-        } catch(error) {
-             console.error("Error creating form from template: ", error);
-             toast({
-                variant: 'destructive',
-                title: 'Error al usar plantilla',
-             });
+      try {
+        // If the template is a default one and doesn't exist in the user's DB, save it first.
+        const isDefault = template.id === 'default' || template.id === 'note';
+        if (isDefault) {
+            const templateRef = doc(db, 'users', user.uid, 'forms', template.id);
+            // We use setDoc to ensure the ID is 'default' or 'note'
+            await setDoc(templateRef, template, { merge: true });
         }
+
+        const initialForm = getInitialForm(template);
+        const { id, ...newFormData } = initialForm; // remove client-side id before saving
+        const formsRef = collection(db, 'users', user.uid, 'forms');
+        const docRef = await addDoc(formsRef, newFormData);
+        router.push(`/forms/${docRef.id}`);
+      } catch(error) {
+         console.error("Error creating form from template: ", error);
+         toast({
+            variant: 'destructive',
+            title: 'Error al usar plantilla',
+         });
+      }
     }
   };
 
@@ -124,7 +127,7 @@ export default function TemplatesPage() {
             <Card key={template.id}>
               <CardHeader>
                 <CardTitle className="flex justify-between items-center">
-                   <span className="hover:underline">
+                   <span className="hover:underline flex-1 pr-2">
                     {template.name}
                   </span>
                   {(template.id !== 'default' && template.id !== 'note') && (

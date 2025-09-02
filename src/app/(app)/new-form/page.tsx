@@ -53,13 +53,10 @@ export default function NewFormPage() {
   
   const handleCreateFromTemplate = async (templateId: string) => {
     if (!user) return;
-
+    
+    // Redirect to pricing if the limit is reached
     if (formCount >= FREE_FORM_LIMIT) {
-        toast({
-            variant: 'destructive',
-            title: 'Límite de formularios gratuitos alcanzado',
-            description: `Por favor, actualice su plan para crear más de ${FREE_FORM_LIMIT} formularios.`,
-        });
+        router.push('/pricing');
         return;
     }
 
@@ -67,7 +64,6 @@ export default function NewFormPage() {
     if (template) {
         try {
             const initialForm = getInitialForm(template);
-             // Firestore generates the ID, so we don't save the 'id' field in the document.
             const { id, ...newFormData } = initialForm;
             const formsRef = collection(db, 'users', user.uid, 'forms');
             const docRef = await addDoc(formsRef, newFormData);
@@ -87,7 +83,7 @@ export default function NewFormPage() {
     return <div className="flex justify-center items-center h-full p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
   
-  const canCreateMore = formCount < FREE_FORM_LIMIT;
+  const hasReachedLimit = formCount >= FREE_FORM_LIMIT;
 
   return (
     <div className="p-4 md:p-8">
@@ -102,7 +98,7 @@ export default function NewFormPage() {
         </Button>
       </div>
 
-       {!canCreateMore && (
+       {hasReachedLimit && (
          <Card className="mb-6 bg-yellow-50 border-yellow-200">
           <CardHeader>
             <CardTitle className="text-yellow-800">Has alcanzado tu límite</CardTitle>
@@ -121,7 +117,7 @@ export default function NewFormPage() {
 
        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {templates.map(template => (
-            <Card key={template.id} className={!canCreateMore ? 'opacity-50' : ''}>
+            <Card key={template.id} className={hasReachedLimit ? 'opacity-50' : ''}>
               <CardHeader>
                 <CardTitle>{template.name}</CardTitle>
               </CardHeader>
@@ -129,7 +125,7 @@ export default function NewFormPage() {
                 <p className="text-sm text-muted-foreground">
                     {template.sections.length} secciones
                 </p>
-                <Button onClick={() => handleCreateFromTemplate(template.id)} className="mt-4 w-full" disabled={!canCreateMore}>
+                <Button onClick={() => handleCreateFromTemplate(template.id)} className="mt-4 w-full" disabled={hasReachedLimit}>
                     <FilePlus className="mr-2 h-4 w-4" />
                     Usar esta plantilla
                 </Button>

@@ -52,19 +52,16 @@ export default function FormsPage() {
   const createNewForm = async () => {
     if (!user) return;
     
+    // For now, we will just redirect to pricing page if limit is reached.
+    // A full subscription check via backend will be implemented later.
     if (forms.length >= FREE_FORM_LIMIT) {
-        toast({
-            variant: 'destructive',
-            title: 'Límite alcanzado',
-            description: `Has alcanzado el límite de ${FREE_FORM_LIMIT} formularios gratuitos. Actualiza tu plan para crear más.`,
-        });
+        router.push('/pricing');
         return;
     }
 
     setIsCreating(true);
     try {
       const initialForm = getInitialForm();
-      // Firestore generates the ID, so we don't save the 'id' field in the document.
       const { id, ...newFormData } = initialForm;
       const formsRef = collection(db, 'users', user.uid, 'forms');
       const docRef = await addDoc(formsRef, newFormData);
@@ -103,14 +100,14 @@ export default function FormsPage() {
     return <div className="flex justify-center items-center h-full p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
-  const canCreateMore = forms.length < FREE_FORM_LIMIT;
+  const hasReachedLimit = forms.length >= FREE_FORM_LIMIT;
 
   return (
     <div className="p-4 md:p-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-foreground">Formularios Guardados</h1>
         <div className="flex flex-col items-end">
-            <Button onClick={createNewForm} disabled={isCreating || !canCreateMore}>
+            <Button onClick={createNewForm} disabled={isCreating}>
               {isCreating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FilePlus className="mr-2 h-4 w-4" />}
               Crear Nuevo
             </Button>
@@ -119,7 +116,7 @@ export default function FormsPage() {
             </p>
         </div>
       </div>
-      {!canCreateMore && (
+      {hasReachedLimit && (
          <Card className="mb-6 bg-yellow-50 border-yellow-200">
           <CardHeader>
             <CardTitle className="text-yellow-800">Has alcanzado tu límite</CardTitle>
