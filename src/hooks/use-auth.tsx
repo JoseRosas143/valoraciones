@@ -11,9 +11,10 @@ import {
   User,
   Auth,
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect, // Changed from signInWithPopup
+  getRedirectResult, // To handle the redirect result
 } from 'firebase/auth';
-import { app } from '@/lib/firebase'; // We'll create this file next
+import { app } from '@/lib/firebase'; 
 
 interface AuthContextType {
   user: User | null;
@@ -37,6 +38,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(user);
       setLoading(false);
     });
+    
+    // Handle the redirect result
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          // This is the signed-in user
+          const user = result.user;
+          console.log('Signed in through redirect:', user);
+          // You can access the Google API token if needed:
+          // const credential = GoogleAuthProvider.credentialFromResult(result);
+          // const token = credential.accessToken;
+        }
+      })
+      .catch((error) => {
+        // Handle errors here
+        console.error('Error after redirect:', error);
+      });
+
     return () => unsubscribe();
   }, [auth]);
 
@@ -54,7 +73,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const signInWithGoogle = () => {
     const provider = new GoogleAuthProvider();
-    return signInWithPopup(auth, provider);
+    return signInWithRedirect(auth, provider); // Changed to signInWithRedirect
   }
 
   const value = {

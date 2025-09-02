@@ -1,5 +1,11 @@
 {
   "projects": {
     "default": "mediscribe-assist-k6tzk"
+  },
+  "targets": {},
+  "etags": {
+    "mediscribe-assist-k6tzk": {
+      "extensionInstances": {}
+    }
   }
 }

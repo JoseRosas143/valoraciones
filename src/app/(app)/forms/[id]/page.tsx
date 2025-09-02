@@ -85,10 +85,12 @@ export default function FormPage() {
   }, [user, formId, router, toast]);
 
   useEffect(() => {
-    fetchForm();
-  }, [fetchForm]);
+    if (user && formId) {
+      fetchForm();
+    }
+  }, [user, formId, fetchForm]);
 
-  const saveForm = useCallback(async (formToSave: MedicalForm) => {
+  const saveForm = useCallback(async (formToSave: MedicalForm | null) => {
     if (!user || !formToSave) return;
     setIsSaving(true);
     try {
@@ -113,12 +115,10 @@ export default function FormPage() {
   }, [user, toast]);
 
 
-  const updateCurrentForm = (updatedForm: MedicalForm, shouldSave: boolean = false) => {
+  const updateAndSaveForm = useCallback((updatedForm: MedicalForm) => {
     setCurrentForm(updatedForm);
-    if (shouldSave) {
-        saveForm(updatedForm);
-    }
-  };
+    saveForm(updatedForm);
+  }, [saveForm]);
 
   const handleAllSectionsContentChange = (fullData: TranscribeMedicalInterviewOutput) => {
     if (!currentForm) return;
@@ -136,7 +136,7 @@ export default function FormPage() {
         const newSections = [...currentForm.sections];
         newSections[0] = { ...newSections[0], content: fullText };
         const updatedForm = { ...currentForm, sections: newSections, updatedAt: new Date().toISOString() };
-        updateCurrentForm(updatedForm, true);
+        updateAndSaveForm(updatedForm);
     } else {
         // Handle multi-section forms as before
         const newSections = currentForm.sections.map(section => {
@@ -148,7 +148,7 @@ export default function FormPage() {
           return section;
         });
         const updatedForm = { ...currentForm, sections: newSections, updatedAt: new Date().toISOString() };
-        updateCurrentForm(updatedForm, true);
+        updateAndSaveForm(updatedForm);
     }
   };
 
@@ -157,7 +157,8 @@ export default function FormPage() {
     const newSections = currentForm.sections.map(section =>
       section.id === id ? { ...section, content: newContent } : section
     );
-    updateCurrentForm({ ...currentForm, sections: newSections, updatedAt: new Date().toISOString() }, false); // Don't save on every keystroke
+    // Don't save on every keystroke, only update state
+    setCurrentForm({ ...currentForm, sections: newSections });
   };
 
   const handleResetSection = (id: string) => {
@@ -309,7 +310,7 @@ export default function FormPage() {
             <Input 
                 value={currentForm.name}
                 onChange={(e) => setCurrentForm({ ...currentForm, name: e.target.value })}
-                onBlur={() => handleSaveForm()} // Save when user clicks away
+                onBlur={handleSaveForm} // Save when user clicks away from the input
                 className="text-3xl font-bold mb-6 text-center font-headline text-foreground"
             />
             <Accordion type="single" collapsible className="w-full space-y-4">

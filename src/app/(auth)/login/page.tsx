@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
 
 
 // Custom BonicaScribe Logo Component
@@ -103,21 +104,14 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
         await signInWithGoogle();
-        router.push('/forms');
     } catch (error: any) {
-        if (error.code === 'auth/popup-closed-by-user') {
-            console.log('Google Sign-In popup closed by user.');
-            setIsLoading(false);
-            return;
-        }
         console.error('Google Sign In error:', error);
         toast({
             variant: 'destructive',
             title: 'Error con Google',
             description: error.message || 'No se pudo iniciar sesión con Google.',
         });
-    } finally {
-      // Do not set isLoading to false here, as the page will redirect on success.
+        setIsLoading(false);
     }
   }
 
@@ -158,7 +152,7 @@ export default function LoginPage() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Cargando...' : (isSigningUp ? 'Registrarse' : 'Iniciar Sesión')}
+              {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : (isSigningUp ? 'Registrarse' : 'Iniciar Sesión')}
             </Button>
           </form>
           
