@@ -10,6 +10,7 @@ Servicio Médico:
 Valorado en: 
 Cama: 
 Fecha: `,
+        aiPrompt: 'Extraer la información del encabezado del hospital. Sé conciso y extrae solo los datos solicitados.'
     },
     {
         id: 'datosPaciente',
@@ -22,6 +23,7 @@ Fecha de Ingreso:
 Fecha de nacimiento:
 Diagnóstico: 
 Procedimiento: `,
+        aiPrompt: 'Extrae los datos demográficos y de diagnóstico del paciente de manera estructurada.'
     },
     {
         id: 'antecedentesHeredofamiliares',
@@ -50,6 +52,7 @@ Hermanos:
 Rama Materna: 
 Rama Paterna: 
 Consanguinidad: `,
+        aiPrompt: 'Detalla los antecedentes médicos de los familiares directos del paciente.'
     },
     {
         id: 'antecedentesPerinatales',
@@ -61,6 +64,7 @@ Natales:
 Desarrollo Psicomotor: 
 Tamiz Neonatal:
 `,
+        aiPrompt: 'Describe los eventos médicos ocurridos antes, durante y después del nacimiento.'
     },
     {
         id: 'antecedentesPersonalesNoPatologicos',
@@ -72,6 +76,7 @@ Inmunizaciones:
 Cuidador Principal: 
 Hemotipo: 
 Escolaridad: `,
+        aiPrompt: 'Resume el estilo de vida, entorno e historial de vacunación del paciente.'
     },
     {
         id: 'antecedentesPersonalesPatologicos',
@@ -89,11 +94,13 @@ Transfusiones:
 Hospitalizaciones previas: 
 IVRS (Infecciones de Vías Respiratorias Superiores): 
 Medicamentos actuales: `,
+        aiPrompt: 'Enumera todas las condiciones médicas previas, cirugías, alergias y medicamentos actuales del paciente.'
     },
     {
         id: 'padecimientoActual',
         title: 'Padecimiento Actual',
         content: `Descripción del padecimiento: `,
+        aiPrompt: 'Describe en detalle la razón principal de la consulta o ingreso hospitalario actual.'
     },
     {
         id: 'somatometria',
@@ -106,6 +113,7 @@ Frecuencia respiratoria:
 Temperatura: 
 Saturación O2: 
 Superficie corporal: `,
+        aiPrompt: 'Registra los signos vitales y mediciones corporales del paciente.'
     },
     {
         id: 'exploracionFisica',
@@ -122,6 +130,7 @@ Genitales:
 Extremidades: 
 Columna vertebral: 
 Accesos vasculares: `,
+        aiPrompt: 'Realiza un examen físico detallado por sistemas, desde la cabeza hasta las extremidades.'
     },
     {
         id: 'laboratoriosEstudios',
@@ -130,11 +139,13 @@ Accesos vasculares: `,
 Tiempos de Coagulación: 
 Otros valores hematológicos: 
 Estudios de Gabinete: `,
+        aiPrompt: 'Reporta los resultados de los análisis de sangre, pruebas de coagulación y estudios de imagen relevantes.'
     },
     {
         id: 'valoracionOtrosServicios',
         title: 'Valoración por Otros Servicios',
         content: `Resumen de las valoraciones de otras especialidades: `,
+        aiPrompt: 'Resume los hallazgos y recomendaciones de otros especialistas que han evaluado al paciente.'
     },
     {
         id: 'planComentariosAdicionales',
@@ -149,21 +160,25 @@ Riesgo Anestésico Quirúrgico:
   NARCO SS: 
 Volumen Sanguíneo Circulante: 
 Sangrado Permisible: `,
+        aiPrompt: 'Detalla el plan de manejo médico, clasifica el riesgo anestésico y calcula los volúmenes sanguíneos.'
     },
     {
       id: 'planAnestesico',
       title: 'Plan Anestésico',
       content: 'Plan Anestésico: ',
+      aiPrompt: 'Describe la estrategia anestésica completa, incluyendo técnicas, fármacos y monitoreo.'
     },
     {
       id: 'indicacionesAnestesicas',
       title: 'Indicaciones Anestésicas',
       content: 'Indicaciones Anestésicas: ',
+      aiPrompt: 'Enumera las órdenes médicas específicas para el periodo perioperatorio.'
     },
     {
       id: 'comentarioBibliografico',
       title: 'Comentario Bibliográfico',
       content: 'Comentario Bibliográfico: ',
+      aiPrompt: 'Añade cualquier referencia bibliográfica o comentario académico relevante para el caso.'
     }
 ];
 
@@ -172,7 +187,7 @@ export const defaultTemplates: MedicalForm = {
     name: 'Valoración Preanestésica',
     sections: initialSections,
     isTemplate: true,
-    generalAiPrompt: 'Eres un asistente médico experto en valoraciones preanestésicas. Tu tono debe ser formal y clínico. Extrae la información relevante del audio para cada sección.'
+    generalAiPrompt: 'Eres un asistente médico experto en valoraciones preanestésicas. Tu tono debe ser formal y clínico. Extrae la información relevante del audio para cada sección, siguiendo las indicaciones específicas si se proporcionan.'
 };
 
 export const noteTemplate: MedicalForm = {
@@ -187,15 +202,13 @@ export const noteTemplate: MedicalForm = {
         }
     ],
     isTemplate: true,
-    generalAiPrompt: 'Eres un asistente de dictado para consultas. Transcribe la conversación de la manera más fiel posible.'
+    generalAiPrompt: 'Eres un asistente de dictado para consultas. Transcribe la conversación de la manera más fiel posible, estructurando la información según las secciones provistas.'
 };
 
 
 export const getInitialForm = (template: MedicalForm = defaultTemplates): MedicalForm => {
-    // Make sure to create new IDs for sections when creating a form from a template
     const newSections = template.sections.map(section => ({
         ...section,
-        id: section.id, // Keep original ID for mapping, but a real ID will be given by nanoid in the component
         content: section.content || '',
         summary: '',
         aiPrompt: section.aiPrompt || '',
@@ -210,6 +223,6 @@ export const getInitialForm = (template: MedicalForm = defaultTemplates): Medica
         updatedAt: new Date().toISOString(),
         templateId: template.id,
         sections: newSections,
-        generalAiPrompt: template.generalAiPrompt || '',
+        generalAiPrompt: template.generalAiPrompt || 'Eres un asistente de dictado experto. Tu tarea es transcribir y estructurar la información de manera clara y precisa según las secciones provistas.',
     }
 }

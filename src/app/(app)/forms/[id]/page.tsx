@@ -21,35 +21,28 @@ import { Loader2 } from 'lucide-react';
 // Helper to format a string from a nested object for display
 function formatContent(data: any): string {
     if (!data) return '';
-    // If it's a string, return it directly. This handles simple cases.
     if (typeof data === 'string') return data;
-    
-    // Check if the data is an object and has the 'transcripcion' key, typical of the 'consulta' section.
-    if (typeof data === 'object' && data !== null && 'transcripcion' in data) {
+    if (typeof data === 'object' && data !== null) {
+      // Specific handler for 'consulta' which just has a 'transcripcion' field
+      if ('transcripcion' in data && Object.keys(data).length === 1) {
         return data.transcripcion || '';
+      }
+      // General object formatter
+      return Object.entries(data)
+        .map(([key, value]) => {
+          const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
+          if (value && typeof value === 'object' && !Array.isArray(value)) {
+            const nestedContent = formatContent(value).split('\n').map(line => `  ${line}`).join('\n');
+            return `${formattedKey}:\n${nestedContent}`;
+          }
+          if (value !== undefined && value !== null && value !== '') {
+            return `${formattedKey}: ${value}`;
+          }
+          return null; // Filter out empty/null/undefined values
+        })
+        .filter(Boolean)
+        .join('\n');
     }
-
-    // Handle other objects by formatting key-value pairs.
-    if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
-        return Object.entries(data)
-            .map(([key, value]) => {
-                const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
-                if (value && typeof value === 'object' && !Array.isArray(value)) {
-                    // For nested objects, indent them.
-                    const nestedContent = formatContent(value).trim().split('\n').map(line => `  ${line}`).join('\n');
-                    return `${formattedKey}:\n${nestedContent}`;
-                }
-                if (value !== null && value !== undefined && value !== '') {
-                    return `${formattedKey}: ${value}`;
-                }
-                // Return key with a space for empty values to maintain structure
-                return `${formattedKey}: `;
-            })
-            .filter(line => line.trim() !== `${line.split(':')[0]}:`)
-            .join('\n');
-    }
-
-    // Fallback for any other data types
     return String(data);
 }
 
@@ -138,27 +131,19 @@ export default function FormPage() {
  const handleAllSectionsContentChange = useCallback((fullData: TranscribeMedicalInterviewOutput) => {
     if (!currentForm) return;
 
-    // Set the full original transcription to state to make it available for the 'View Original' button
     if (fullData.originalTranscription) {
         setFullTranscription(fullData.originalTranscription);
     }
 
     let hasChanged = false;
     const newSections = currentForm.sections.map(section => {
-      // Find the corresponding data for the section from the AI's output
       const sectionData = fullData[section.id as keyof TranscribeMedicalInterviewOutput];
-      
-      if (!sectionData) {
-          return section;
-      }
-      
       const newContent = formatContent(sectionData);
-      
+
       if (newContent && section.content !== newContent) {
         hasChanged = true;
         return { ...section, content: newContent };
       }
-
       return section;
     });
 
@@ -189,7 +174,6 @@ export default function FormPage() {
   const handleResetSection = (id: string) => {
     if (!currentForm || !currentForm.templateId) return;
     
-    // Combine default and note templates for lookup
     const allTemplates = [defaultTemplates, noteTemplate];
     const baseTemplate = allTemplates.find(t => t.id === currentForm?.templateId);
 
@@ -197,7 +181,7 @@ export default function FormPage() {
         const originalSection = baseTemplate.sections.find(section => section.id === id);
         if (originalSection) {
             const newSections = currentForm.sections.map(section =>
-                section.id === id ? { ...section, content: originalSection.content, summary: '' } : section
+                section.id === id ? { ...section, content: originalSection.content || '', summary: '' } : section
             );
             updateAndSaveForm({ ...currentForm, sections: newSections });
             toast({
