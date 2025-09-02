@@ -1,47 +1,92 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
 import { MedicalForm } from '@/types/medical-form';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, addDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FilePlus, Trash2, Edit, PlusSquare } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { defaultTemplate, getInitialForm } from '@/lib/forms-utils';
+import { FilePlus, Trash2, Edit, PlusSquare, Loader2 } from 'lucide-react';
+import { getInitialForm } from '@/lib/forms-utils';
+import { useToast } from '@/hooks/use-toast';
 
 export default function TemplatesPage() {
-  const [forms, setForms] = useLocalStorage<MedicalForm[]>('medicalForms', [defaultTemplate]);
-  const [isClient, setIsClient] = useState(false);
+  const [templates, setTemplates] = useState<MedicalForm[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
-    setIsClient(true);
-  }, []);
+    async function fetchTemplates() {
+      if (!user) return;
+      try {
+        const templatesRef = collection(db, 'users', user.uid, 'forms');
+        const q = query(templatesRef, where('isTemplate', '==', true));
+        const querySnapshot = await getDocs(q);
+        const userTemplates = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MedicalForm));
+        setTemplates(userTemplates);
+      } catch (error) {
+        console.error("Error fetching templates: ", error);
+        toast({
+          variant: 'destructive',
+          title: 'Error al cargar plantillas',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchTemplates();
+  }, [user, toast]);
 
   const createNewTemplate = () => {
     router.push('/templates/new');
   };
   
-  const handleUseTemplate = (templateId: string) => {
-    const template = forms.find(t => t.id === templateId);
+  const handleUseTemplate = async (templateId: string) => {
+    if (!user) return;
+    const template = templates.find(t => t.id === templateId);
     if (template) {
-        const newForm = getInitialForm(template);
-        setForms([...forms, newForm]);
-        router.push(`/forms/${newForm.id}`);
+        try {
+            const newForm = getInitialForm(template);
+            const formsRef = collection(db, 'users', user.uid, 'forms');
+            const docRef = await addDoc(formsRef, { ...newForm, id: undefined });
+            router.push(`/forms/${docRef.id}`);
+        } catch(error) {
+             console.error("Error creating form from template: ", error);
+             toast({
+                variant: 'destructive',
+                title: 'Error al usar plantilla',
+             });
+        }
     }
   };
 
-  const deleteTemplate = (id: string) => {
+  const deleteTemplate = async (id: string) => {
+     if (!user) return;
     if (id === 'default') {
-        alert('No se puede eliminar la plantilla predeterminada.');
+        toast({
+            variant: 'destructive',
+            title: 'Acción no permitida',
+            description: 'No se puede eliminar la plantilla predeterminada.',
+        });
         return;
     }
-    setForms(forms.filter(form => form.id !== id));
+    try {
+        await deleteDoc(doc(db, 'users', user.uid, 'forms', id));
+        setTemplates(templates.filter(t => t.id !== id));
+        toast({ title: 'Plantilla eliminada' });
+    } catch(e) {
+        console.error("Error deleting template: ", e);
+        toast({ variant: 'destructive', title: 'Error al eliminar' });
+    }
   };
   
-  if (!isClient) {
-    return <div>Cargando plantillas...</div>;
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-full p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
   return (
@@ -53,9 +98,9 @@ export default function TemplatesPage() {
           Crear Nueva Plantilla
         </Button>
       </div>
-       {forms.filter(f => f.isTemplate).length > 0 ? (
+       {templates.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {forms.filter(f => f.isTemplate).map(template => (
+          {templates.map(template => (
             <Card key={template.id}>
               <CardHeader>
                 <CardTitle className="flex justify-between items-center">

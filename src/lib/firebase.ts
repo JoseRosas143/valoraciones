@@ -1,6 +1,7 @@
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAnalytics } from "firebase/analytics";
+import { getFirestore } from 'firebase/firestore';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -15,6 +16,7 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const db = getFirestore(app);
 
 // Analytics can be initialized here if needed, but it's often better to check if window is defined.
 if (typeof window !== 'undefined') {
@@ -26,4 +28,4 @@ if (typeof window !== 'undefined') {
 }
 
 
-export { app };
+export { app, db };

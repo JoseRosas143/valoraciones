@@ -18,6 +18,7 @@ interface MedicalFormSectionProps {
   onSummarize: (id: string) => void;
   isSummarizing: boolean;
   onSave: () => void;
+  isSaving?: boolean;
   onTitleChange?: (id: string, newTitle: string) => void;
   onDelete?: (id: string) => void;
   isEditable: boolean;
@@ -34,6 +35,7 @@ export function MedicalFormSection({
   onSummarize,
   isSummarizing,
   onSave,
+  isSaving,
   onTitleChange,
   onDelete,
   isEditable,
@@ -154,8 +156,8 @@ export function MedicalFormSection({
         <div className="flex justify-end items-center mb-2">
             <div className="flex items-center">
               {!isEditable && (
-                  <Button variant="ghost" size="icon" onClick={onSave} className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                      <Save className="h-5 w-5" />
+                  <Button variant="ghost" size="icon" onClick={onSave} className="h-8 w-8 text-muted-foreground hover:text-foreground" disabled={isSaving}>
+                      {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
                       <span className="sr-only">Guardar Formulario</span>
                   </Button>
               )}

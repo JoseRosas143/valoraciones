@@ -1,62 +1,36 @@
 
 'use client';
 import { useState, useEffect } from 'react';
-import { useAuth } from './use-auth';
 
-function getKey(key: string, userId: string | null): string {
-    return userId ? `${key}_${userId}` : key;
-}
+// This hook is being deprecated in favor of Firestore.
+// It will be removed in a future update.
 
 export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
-  const { user } = useAuth();
-  const userId = user?.uid || null;
-
   const [storedValue, setStoredValue] = useState<T>(() => {
+    // This part now only runs on the client and is temporary.
     if (typeof window === 'undefined') {
       return initialValue;
     }
     try {
-      const compositeKey = getKey(key, userId);
-      const item = window.localStorage.getItem(compositeKey);
+      const item = window.localStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
       console.error(error);
       return initialValue;
     }
   });
-  
+
   const setValue = (value: T) => {
     try {
       const valueToStore = value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
-      if (typeof window !== 'undefined' && userId) {
-        const compositeKey = getKey(key, userId);
-        window.localStorage.setItem(compositeKey, JSON.stringify(valueToStore));
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(key, JSON.stringify(valueToStore));
       }
     } catch (error) {
       console.error(error);
     }
   };
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && userId) {
-        const compositeKey = getKey(key, userId);
-        const item = window.localStorage.getItem(compositeKey);
-        if (item) {
-            try {
-                setStoredValue(JSON.parse(item));
-            } catch(e) {
-                console.error("Error parsing JSON from localStorage", e);
-                setStoredValue(initialValue);
-            }
-        } else {
-            setStoredValue(initialValue);
-        }
-    } else if (!userId) {
-        // Clear data if user logs out
-        setStoredValue(initialValue);
-    }
-  }, [key, userId]);
 
   return [storedValue, setValue];
 }

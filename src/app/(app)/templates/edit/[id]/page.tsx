@@ -7,35 +7,46 @@ import { MedicalFormSection } from '@/components/medical-form-section';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { MedicalForm, MedicalSection } from '@/types/medical-form';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useAuth } from '@/hooks/use-auth';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
 import { nanoid } from 'nanoid';
-import { PlusCircle, Save, ArrowUp, ArrowDown } from 'lucide-react';
-import { defaultTemplate } from '@/lib/forms-utils';
+import { PlusCircle, Save, ArrowUp, ArrowDown, Loader2 } from 'lucide-react';
 
 export default function TemplateEditorPage() {
     const router = useRouter();
     const params = useParams();
     const templateId = params.id as string;
 
-    const [forms, setForms] = useLocalStorage<MedicalForm[]>('medicalForms', [defaultTemplate]);
     const [currentForm, setCurrentForm] = useState<MedicalForm | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+    const { user } = useAuth();
     const { toast } = useToast();
 
     useEffect(() => {
-        if (templateId) {
-            const template = forms.find(f => f.id === templateId && f.isTemplate);
-            if (template) {
-                setCurrentForm({ ...template });
-            } else {
-                toast({
-                    variant: 'destructive',
-                    title: 'Plantilla no encontrada',
-                });
-                router.push('/templates');
+        async function fetchTemplate() {
+            if (templateId && user) {
+                try {
+                    const templateRef = doc(db, 'users', user.uid, 'forms', templateId);
+                    const docSnap = await getDoc(templateRef);
+                    if (docSnap.exists() && docSnap.data().isTemplate) {
+                        setCurrentForm({ id: docSnap.id, ...docSnap.data() } as MedicalForm);
+                    } else {
+                        toast({ variant: 'destructive', title: 'Plantilla no encontrada' });
+                        router.push('/templates');
+                    }
+                } catch (error) {
+                     toast({ variant: 'destructive', title: 'Error al cargar plantilla' });
+                     router.push('/templates');
+                } finally {
+                    setIsLoading(false);
+                }
             }
         }
-    }, [templateId, forms, router, toast]);
+        fetchTemplate();
+    }, [templateId, user, router, toast]);
 
     const updateCurrentForm = (updatedForm: MedicalForm) => {
         setCurrentForm(updatedForm);
@@ -76,25 +87,28 @@ export default function TemplateEditorPage() {
     }, [currentForm]);
 
 
-    const handleSaveTemplate = () => {
-        if (!currentForm) return;
-        const existingIndex = forms.findIndex(f => f.id === currentForm.id);
-        let newForms;
-        if (existingIndex > -1) {
-            newForms = forms.map((f, index) => index === existingIndex ? currentForm : f);
-        } else {
-            newForms = [...forms, currentForm];
+    const handleSaveTemplate = async () => {
+        if (!currentForm || !user) return;
+        setIsSaving(true);
+        try {
+            const templateRef = doc(db, 'users', user.uid, 'forms', currentForm.id);
+            const { id, ...templateData } = currentForm;
+            await setDoc(templateRef, templateData, { merge: true });
+            toast({
+                title: 'Plantilla Guardada',
+                description: `La plantilla "${currentForm.name}" ha sido guardada.`,
+            });
+            router.push('/templates');
+        } catch(e) {
+            console.error("Error saving template: ", e);
+            toast({ variant: 'destructive', title: 'Error al guardar' });
+        } finally {
+            setIsSaving(false);
         }
-        setForms(newForms);
-        toast({
-            title: 'Plantilla Guardada',
-            description: `La plantilla "${currentForm.name}" ha sido guardada.`,
-        });
-        router.push('/templates');
     };
 
-    if (!currentForm) {
-        return <div>Cargando editor...</div>;
+    if (isLoading || !currentForm) {
+        return <div className="flex justify-center items-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
 
     return (
@@ -102,8 +116,8 @@ export default function TemplateEditorPage() {
              <header className="bg-card border-b p-4 shadow-sm sticky top-0 z-10">
                 <div className="container mx-auto flex justify-between items-center">
                     <h1 className="text-2xl font-bold">Editor de Plantillas</h1>
-                    <Button onClick={handleSaveTemplate}>
-                        <Save className="mr-2 h-4 w-4"/>
+                    <Button onClick={handleSaveTemplate} disabled={isSaving}>
+                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4"/>}
                         Guardar Plantilla
                     </Button>
                 </div>
@@ -128,8 +142,6 @@ export default function TemplateEditorPage() {
                                     isEditable={true}
                                     onTitleChange={handleTitleChange}
                                     onDelete={handleDeleteSection}
-                                    // Pass dummy functions for non-applicable props
-                                    onAllSectionsContentChange={() => {}}
                                     onReset={() => {}}
                                     onSummarize={() => {}}
                                     onMove={direction => handleMoveSection(index, direction)}

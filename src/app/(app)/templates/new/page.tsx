@@ -7,21 +7,23 @@ import { MedicalFormSection } from '@/components/medical-form-section';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { MedicalForm, MedicalSection } from '@/types/medical-form';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useAuth } from '@/hooks/use-auth';
+import { db } from '@/lib/firebase';
+import { addDoc, collection } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
 import { nanoid } from 'nanoid';
-import { PlusCircle, Save, ArrowUp, ArrowDown } from 'lucide-react';
-import { defaultTemplate } from '@/lib/forms-utils';
+import { PlusCircle, Save, Loader2 } from 'lucide-react';
 
 export default function NewTemplatePage() {
     const router = useRouter();
-    const [forms, setForms] = useLocalStorage<MedicalForm[]>('medicalForms', [defaultTemplate]);
     const [currentForm, setCurrentForm] = useState<MedicalForm | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const { user } = useAuth();
     const { toast } = useToast();
 
     useEffect(() => {
         setCurrentForm({
-            id: nanoid(),
+            id: nanoid(), // This is a temporary client-side ID
             name: 'Nueva Plantilla sin título',
             sections: [],
             isTemplate: true,
@@ -69,22 +71,33 @@ export default function NewTemplatePage() {
     }, [currentForm]);
 
 
-    const handleSaveTemplate = () => {
-        if (!currentForm) return;
+    const handleSaveTemplate = async () => {
+        if (!currentForm || !user) return;
+        setIsSaving(true);
         const finalForm = {
             ...currentForm,
             updatedAt: new Date().toISOString(),
         }
-        setForms([...forms, finalForm]);
-        toast({
-            title: 'Plantilla Creada',
-            description: `La plantilla "${finalForm.name}" ha sido guardada.`,
-        });
-        router.push('/templates');
+        // Remove temporary client-side ID
+        const { id, ...templateData } = finalForm;
+
+        try {
+            const templatesRef = collection(db, 'users', user.uid, 'forms');
+            await addDoc(templatesRef, templateData);
+            toast({
+                title: 'Plantilla Creada',
+                description: `La plantilla "${finalForm.name}" ha sido guardada.`,
+            });
+            router.push('/templates');
+        } catch(e) {
+            console.error("Error saving new template: ", e);
+            toast({ variant: 'destructive', title: 'Error al guardar' });
+            setIsSaving(false);
+        }
     };
 
     if (!currentForm) {
-        return <div>Cargando...</div>;
+        return <div className="flex justify-center items-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
 
     return (
@@ -92,8 +105,8 @@ export default function NewTemplatePage() {
              <header className="bg-card border-b p-4 shadow-sm sticky top-0 z-10">
                 <div className="container mx-auto flex justify-between items-center">
                     <h1 className="text-2xl font-bold">Nueva Plantilla</h1>
-                    <Button onClick={handleSaveTemplate}>
-                        <Save className="mr-2 h-4 w-4"/>
+                    <Button onClick={handleSaveTemplate} disabled={isSaving}>
+                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4"/>}
                         Guardar Plantilla
                     </Button>
                 </div>
@@ -118,7 +131,6 @@ export default function NewTemplatePage() {
                                     isEditable={true}
                                     onTitleChange={handleTitleChange}
                                     onDelete={handleDeleteSection}
-                                    onAllSectionsContentChange={() => {}}
                                     onReset={() => {}}
                                     onSummarize={() => {}}
                                     onMove={direction => handleMoveSection(index, direction)}

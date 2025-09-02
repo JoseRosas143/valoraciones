@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import jsPDF from 'jspdf';
 import { Accordion } from '@/components/ui/accordion';
@@ -9,10 +9,13 @@ import { MedicalFormSection } from '@/components/medical-form-section';
 import { summarizeMedicalSection } from '@/ai/flows/summarize-medical-section';
 import { useToast } from '@/hooks/use-toast';
 import type { TranscribeMedicalInterviewOutput } from '@/ai/flows/transcribe-medical-interview';
-import { MedicalForm, MedicalSection } from '@/types/medical-form';
-import { useLocalStorage } from '@/hooks/use-local-storage';
-import { defaultTemplate } from '@/lib/forms-utils';
+import { MedicalForm } from '@/types/medical-form';
+import { defaultTemplate, getInitialForm } from '@/lib/forms-utils';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/hooks/use-auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Loader2 } from 'lucide-react';
 
 // Helper to format a string from a nested object for display
 function formatContent(data: any, indent = ''): string {
@@ -36,30 +39,81 @@ function formatContent(data: any, indent = ''): string {
 }
 
 export default function FormPage() {
-  const [forms, setForms] = useLocalStorage<MedicalForm[]>('medicalForms', [defaultTemplate]);
   const [currentForm, setCurrentForm] = useState<MedicalForm | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [isLoadingPdf, setIsLoadingPdf] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState<string | null>(null);
+  
   const { toast } = useToast();
   const router = useRouter();
   const params = useParams();
   const formId = params.id as string;
+  const { user } = useAuth();
 
+  const fetchForm = useCallback(async () => {
+    if (!user || !formId) return;
+    setIsLoading(true);
+    try {
+        const formRef = doc(db, 'users', user.uid, 'forms', formId);
+        const docSnap = await getDoc(formRef);
+
+        if (docSnap.exists()) {
+            setCurrentForm({ id: docSnap.id, ...docSnap.data() } as MedicalForm);
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Formulario no encontrado',
+            });
+            router.push('/forms');
+        }
+    } catch (error) {
+        console.error("Error fetching form: ", error);
+        toast({
+            variant: 'destructive',
+            title: 'Error al cargar',
+            description: 'No se pudo cargar el formulario.',
+        });
+        router.push('/forms');
+    } finally {
+        setIsLoading(false);
+    }
+  }, [user, formId, router, toast]);
 
   useEffect(() => {
-    const form = forms.find(f => f.id === formId);
-    if (form) {
-      setCurrentForm(form);
-    } else {
-      // If form is not found, redirect to the forms list
-      router.push('/forms');
-    }
-  }, [formId, forms, router]);
+    fetchForm();
+  }, [fetchForm]);
 
-  const updateCurrentForm = (updatedForm: MedicalForm) => {
+  const saveForm = useCallback(async (formToSave: MedicalForm) => {
+    if (!user || !formToSave) return;
+    setIsSaving(true);
+    try {
+      const formRef = doc(db, 'users', user.uid, 'forms', formToSave.id);
+      // Remove id from object to avoid saving it in the document fields
+      const { id, ...formData } = formToSave;
+      await setDoc(formRef, formData, { merge: true });
+       toast({
+            title: 'Formulario Guardado',
+            description: 'Los cambios han sido guardados en la nube.',
+        });
+    } catch (error) {
+        console.error("Error saving form: ", error);
+         toast({
+            variant: 'destructive',
+            title: 'Error al Guardar',
+            description: 'No se pudieron guardar los cambios.',
+        });
+    } finally {
+        setIsSaving(false);
+    }
+  }, [user, toast]);
+
+
+  const updateCurrentForm = (updatedForm: MedicalForm, shouldSave: boolean = false) => {
     setCurrentForm(updatedForm);
-    const newForms = forms.map(f => (f.id === updatedForm.id ? updatedForm : f));
-    setForms(newForms);
+    if (shouldSave) {
+        saveForm(updatedForm);
+    }
   };
 
   const handleAllSectionsContentChange = (fullData: TranscribeMedicalInterviewOutput) => {
@@ -72,7 +126,8 @@ export default function FormPage() {
       }
       return section;
     });
-    updateCurrentForm({ ...currentForm, sections: newSections });
+    const updatedForm = { ...currentForm, sections: newSections, updatedAt: new Date().toISOString() };
+    updateCurrentForm(updatedForm, true); // Save after a full update
   };
 
   const handleSectionContentChange = (id: string, newContent: string) => {
@@ -80,12 +135,16 @@ export default function FormPage() {
     const newSections = currentForm.sections.map(section =>
       section.id === id ? { ...section, content: newContent } : section
     );
-    updateCurrentForm({ ...currentForm, sections: newSections, updatedAt: new Date().toISOString() });
+    updateCurrentForm({ ...currentForm, sections: newSections, updatedAt: new Date().toISOString() }, false); // Don't save on every keystroke
   };
 
   const handleResetSection = (id: string) => {
     if (!currentForm) return;
-    const originalSection = defaultTemplate.sections.find(section => section.id === id);
+    
+    // Find the original template to reset from
+    const template = defaultTemplate; // Assuming a single default for now. Could be enhanced.
+    const originalSection = template.sections.find(section => section.id === id);
+
     if (originalSection) {
         handleSectionContentChange(id, originalSection.content);
         toast({
@@ -118,11 +177,7 @@ export default function FormPage() {
 
   const handleSaveForm = () => {
     if (!currentForm) return;
-    updateCurrentForm({ ...currentForm, updatedAt: new Date().toISOString() });
-    toast({
-      title: 'Formulario Guardado',
-      description: 'El estado actual del formulario ha sido guardado.',
-    });
+    saveForm({ ...currentForm, updatedAt: new Date().toISOString() });
   };
 
   const handleExportDoc = () => {
@@ -193,8 +248,8 @@ export default function FormPage() {
     setIsLoadingPdf(false);
   };
   
-  if (!currentForm) {
-    return <div>Cargando formulario...</div>;
+  if (isLoading || !currentForm) {
+    return <div className="flex justify-center items-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
   return (
@@ -209,7 +264,8 @@ export default function FormPage() {
           <div className="bg-background rounded-lg p-2 md:p-4">
             <Input 
                 value={currentForm.name}
-                onChange={(e) => updateCurrentForm({ ...currentForm, name: e.target.value })}
+                onChange={(e) => setCurrentForm({ ...currentForm, name: e.target.value })}
+                onBlur={() => handleSaveForm()} // Save when user clicks away
                 className="text-3xl font-bold mb-6 text-center font-headline text-foreground"
             />
             <Accordion type="single" collapsible className="w-full space-y-4">
@@ -223,6 +279,7 @@ export default function FormPage() {
                   onSummarize={handleSummarizeSection}
                   isSummarizing={isSummarizing === section.id}
                   onSave={handleSaveForm}
+                  isSaving={isSaving}
                   isEditable={false}
                 />
               ))}
