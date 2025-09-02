@@ -1,5 +1,4 @@
 
-# List all movies with their basic information
 query ListMovies {
   movies {
     id
@@ -10,8 +9,7 @@ query ListMovies {
   }
 }
 
-# Get a specific movie by its ID, including its reviews
-query GetMovieById($movieId: String!) {
+query GetMovieById($movieId: UUID!) {
   movies(movieId: $movieId) {
     id
     title
@@ -19,35 +17,33 @@ query GetMovieById($movieId: String!) {
     genres
     imageUrl
     reviews {
-      userId
       rating
       reviewText
-      reviewDate
+      createdAt
       user {
+        id
         username
       }
     }
   }
 }
 
-# List all users
 query ListUsers {
-    users {
-        id
-        username
-    }
+  users {
+    id
+    username
+  }
 }
 
 
-# List reviews for a specific user
-query ListUserReviews($userId: String!) {
+query GetUserReviews($userId: UUID!) {
   users(userId: $userId) {
     id
     username
     reviews {
       rating
       reviewText
-      reviewDate
+      createdAt
       movie {
         id
         title
@@ -56,13 +52,8 @@ query ListUserReviews($userId: String!) {
   }
 }
 
-# Search for movies based on title or genre
 query SearchMovie($titleInput: String, $genre: String) {
-  movies(
-    filter: {
-      _or: [{ title: { like: $titleInput } }, { genres: { contains: $genre } }]
-    }
-  ) {
+  movies(filter: { title: { like: $titleInput }, genres: { contains: $genre } }) {
     id
     title
     year

@@ -1,6 +1,6 @@
 
 type Movie @table(name: "movies") {
-  id: String! @pk
+  id: UUID! @primaryKey
   title: String!
   year: Int
   genres: [String]
@@ -9,15 +9,22 @@ type Movie @table(name: "movies") {
 }
 
 type User @table(name: "users") {
-  id: String! @pk
+  id: UUID! @primaryKey
   username: String!
   reviews: [Review] @relation(on: "userId")
 }
 
 type Review @table(name: "reviews") {
-  movieId: String! @pk
-  userId: String! @pk
+  movieId: UUID!
+  userId: UUID!
   rating: Int
   reviewText: String
-  reviewDate: Timestamp
+  createdAt: Timestamp
+  movie: Movie @relation(from: "movieId")
+  user: User @relation(from: "userId")
+}
+
+extend type Query {
+  movies(movieId: UUID): [Movie]
+  users(userId: UUID): [User]
 }
