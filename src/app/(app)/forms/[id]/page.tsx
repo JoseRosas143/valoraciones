@@ -11,7 +11,7 @@ import { suggestDiagnosis } from '@/ai/flows/suggest-diagnosis';
 import { useToast } from '@/hooks/use-toast';
 import type { TranscribeMedicalInterviewOutput } from '@/ai/flows/transcribe-medical-interview';
 import { MedicalForm, MedicalSection } from '@/types/medical-form';
-import { defaultTemplates, noteTemplate, getInitialForm } from '@/lib/forms-utils';
+import { defaultTemplates, noteTemplate } from '@/lib/forms-utils';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/use-auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -45,6 +45,7 @@ function formatContent(data: any): string {
                 // Return key with a space for empty values to maintain structure
                 return `${formattedKey}: `;
             })
+            .filter(line => line.trim() !== `${line.split(':')[0]}:`)
             .join('\n');
     }
 
@@ -134,7 +135,7 @@ export default function FormPage() {
     saveForm(updatedForm);
   }, [saveForm]);
   
-  const handleAllSectionsContentChange = useCallback((fullData: TranscribeMedicalInterviewOutput) => {
+ const handleAllSectionsContentChange = useCallback((fullData: TranscribeMedicalInterviewOutput) => {
     if (!currentForm) return;
 
     // Set the full original transcription to state to make it available for the 'View Original' button
@@ -147,24 +148,20 @@ export default function FormPage() {
       // Find the corresponding data for the section from the AI's output
       const sectionData = fullData[section.id as keyof TranscribeMedicalInterviewOutput];
       
-      // If there's no data for this section from the AI, keep the section as is.
       if (!sectionData) {
           return section;
       }
       
       const newContent = formatContent(sectionData);
       
-      // If new content is generated and it's different from the existing content, mark as changed.
       if (newContent && section.content !== newContent) {
         hasChanged = true;
         return { ...section, content: newContent };
       }
 
-      // Otherwise, return the original section.
       return section;
     });
 
-    // If any section has changed, update the form.
     if (hasChanged) {
         const updatedForm = { ...currentForm, sections: newSections, updatedAt: new Date().toISOString() };
         updateAndSaveForm(updatedForm);

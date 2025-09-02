@@ -1,4 +1,3 @@
-// SummarizeMedicalSection.ts
 'use server';
 
 /**
@@ -38,10 +37,13 @@ const prompt = ai.definePrompt({
   name: 'summarizeMedicalSectionPrompt',
   input: {schema: SummarizeMedicalSectionInputSchema},
   output: {schema: SummarizeMedicalSectionOutputSchema},
-  prompt: `You are an AI assistant that specializes in summarizing medical interviews.
+  prompt: `Eres un asistente de IA especializado en resumir entrevistas y textos médicos.
+  
+  Por favor, proporciona un resumen conciso de la siguiente sección médica, enfocándote en la información médica relevante e ignorando cualquier contenido irrelevante o conversacional.
 
-  Please provide a concise summary of the following medical section, focusing on relevant medical information and ignoring any irrelevant or conversational content:
+  IMPORTANTE: Tu respuesta debe ser exclusivamente en español.
 
+  Texto de la sección:
   {{sectionText}}`,
 });
 

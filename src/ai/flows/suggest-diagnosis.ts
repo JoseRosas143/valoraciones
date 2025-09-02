@@ -41,6 +41,8 @@ const prompt = ai.definePrompt({
   
   Analiza los síntomas, historial y cualquier otra información relevante mencionada. Tu respuesta debe incluir el posible diagnóstico y una breve justificación basada en la evidencia del texto. No inventes información. Si la información es insuficiente, indícalo.
 
+  IMPORTANTE: Tu respuesta debe ser exclusivamente en español.
+
   Transcripción de la Consulta:
   {{{consultationText}}}
   `,
