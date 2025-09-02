@@ -133,14 +133,6 @@ export function MedicalFormSection({ section, onContentChange, onTitleChange, on
     <AccordionItem value={section.id} className="bg-card border-none rounded-lg shadow-sm overflow-hidden">
         <AccordionTrigger className="px-6 py-4 text-lg font-semibold hover:no-underline data-[state=open]:border-b">
             <div className="flex items-center gap-2 w-full">
-                <div className="flex flex-col">
-                  <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); onMove('up')}} disabled={isFirst} className="h-6 w-6 text-muted-foreground hover:text-foreground disabled:opacity-30">
-                    <ArrowUp className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); onMove('down')}} disabled={isLast} className="h-6 w-6 text-muted-foreground hover:text-foreground disabled:opacity-30">
-                    <ArrowDown className="h-4 w-4" />
-                  </Button>
-                </div>
                 {isEditingTitle ? (
                     <Input 
                         value={editableTitle}
@@ -153,7 +145,20 @@ export function MedicalFormSection({ section, onContentChange, onTitleChange, on
                 ) : (
                     <span className="flex-1 text-left">{section.title}</span>
                 )}
-                <Button variant="ghost" size="icon" onClick={handleTitleEditToggle} className="h-8 w-8">
+            </div>
+      </AccordionTrigger>
+      <AccordionContent className="px-6 pb-6 pt-4">
+        <div className="flex justify-between items-center mb-4 -mt-4">
+            <div className="flex">
+                <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); onMove('up')}} disabled={isFirst} className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-30">
+                    <ArrowUp className="h-5 w-5" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); onMove('down')}} disabled={isLast} className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-30">
+                    <ArrowDown className="h-5 w-5" />
+                </Button>
+            </div>
+            <div className="flex items-center">
+                 <Button variant="ghost" size="icon" onClick={handleTitleEditToggle} className="h-8 w-8">
                     {isEditingTitle ? <Save className="h-5 w-5" /> : <Edit className="h-5 w-5" />}
                     <span className="sr-only">{isEditingTitle ? 'Save title' : 'Edit title'}</span>
                 </Button>
@@ -162,8 +167,7 @@ export function MedicalFormSection({ section, onContentChange, onTitleChange, on
                     <span className="sr-only">Delete section</span>
                 </Button>
             </div>
-      </AccordionTrigger>
-      <AccordionContent className="px-6 pb-6 pt-4">
+        </div>
         <div className="space-y-4">
           <div className="flex items-start gap-4">
             <div className='flex flex-col gap-2'>
