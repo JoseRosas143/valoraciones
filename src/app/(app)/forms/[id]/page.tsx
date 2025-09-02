@@ -137,6 +137,12 @@ export default function FormPage() {
     let hasChanged = false;
     const newSections = currentForm.sections.map(section => {
       const sectionData = fullData[section.id as keyof TranscribeMedicalInterviewOutput];
+      
+      // Keep existing content if no new data is provided for this section
+      if (!sectionData) {
+          return section;
+      }
+      
       const content = formatContent(sectionData);
       
       if (content && section.content !== content) {

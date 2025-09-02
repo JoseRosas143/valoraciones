@@ -69,6 +69,7 @@ export function MedicalFormSection({
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [isOriginalTranscriptionCopied, setIsOriginalTranscriptionCopied] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const { toast } = useToast();
@@ -158,6 +159,14 @@ export function MedicalFormSection({
       setTimeout(() => setIsCopied(false), 2000);
     }
   };
+
+  const handleCopyOriginalTranscription = () => {
+    if (fullTranscription) {
+        navigator.clipboard.writeText(fullTranscription);
+        setIsOriginalTranscriptionCopied(true);
+        setTimeout(() => setIsOriginalTranscriptionCopied(false), 2000);
+    }
+  }
 
   useEffect(() => {
     return () => {
@@ -263,6 +272,10 @@ export function MedicalFormSection({
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
+                      <Button variant="outline" onClick={handleCopyOriginalTranscription}>
+                        {isOriginalTranscriptionCopied ? <Check className="mr-2 h-4 w-4 text-green-600" /> : <Clipboard className="mr-2 h-4 w-4" />}
+                        {isOriginalTranscriptionCopied ? 'Copiado' : 'Copiar'}
+                      </Button>
                       <AlertDialogAction>Cerrar</AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
