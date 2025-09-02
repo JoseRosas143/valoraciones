@@ -7,8 +7,9 @@ import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 
 // Custom BonicaScribe Logo Component
@@ -137,6 +138,12 @@ export default function LoginPage() {
             )}
           </div>
         </CardContent>
+        <CardFooter className="flex-col items-center justify-center gap-4 pt-4">
+            <Link href="https://climate.stripe.com/wNksj6" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground hover:underline">
+              Aporte Climático
+            </Link>
+            <iframe width="300" height="38" style={{border:0, borderRadius: '19px'}} src="https://climate.stripe.com/badge/fQZVoI?theme=light&size=small&locale=es-419"></iframe>
+        </CardFooter>
       </Card>
     </div>
   );

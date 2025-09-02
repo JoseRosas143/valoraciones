@@ -3,7 +3,7 @@
 
 import { useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import Script from 'next/script';
 
 // This is a workaround for to make TypeScript happy with the custom element
@@ -59,6 +59,10 @@ export default function PricingPage() {
                     >
                     </stripe-pricing-table>
                 </CardContent>
+                <CardFooter className="flex-col items-center gap-4 pt-6">
+                   <p className="text-sm text-muted-foreground text-center">Un porcentaje de nuestros ingresos se destina a la eliminación de CO₂.</p>
+                   <iframe width="420" height="38" style={{border:0, borderRadius: '19px', maxWidth: '100%'}} src="https://climate.stripe.com/badge/fQZVoI?theme=light&size=small&locale=es-419"></iframe>
+                </CardFooter>
             </Card>
         </div>
     );

@@ -13,7 +13,7 @@ import {
   SidebarFooter,
   SidebarInset,
 } from '@/components/ui/sidebar';
-import { FileText, FilePlus, LayoutTemplate, LogOut, Gem } from 'lucide-react';
+import { FileText, FilePlus, LayoutTemplate, LogOut, Gem, Leaf } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth, AuthProvider } from '@/hooks/use-auth';
@@ -132,6 +132,16 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                   <Gem />
                   Suscripción
                 </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+               <SidebarMenuButton
+                asChild
+              >
+                <a href="https://climate.stripe.com/wNksj6" target="_blank" rel="noopener noreferrer">
+                  <Leaf />
+                  Aporte Climático
+                </a>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
