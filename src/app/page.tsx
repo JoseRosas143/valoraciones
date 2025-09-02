@@ -135,6 +135,19 @@ export default function Home() {
       }).catch(() => setIsLoadingPdf(false));
     }
   };
+
+  const handleMoveSection = (index: number, direction: 'up' | 'down') => {
+    if (direction === 'up' && index > 0) {
+      const newSections = [...sections];
+      [newSections[index], newSections[index - 1]] = [newSections[index - 1], newSections[index]];
+      setSections(newSections);
+    }
+    if (direction === 'down' && index < sections.length - 1) {
+      const newSections = [...sections];
+      [newSections[index], newSections[index + 1]] = [newSections[index + 1], newSections[index]];
+      setSections(newSections);
+    }
+  };
   
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -150,7 +163,7 @@ export default function Home() {
               Formulario Médico
             </h1>
             <Accordion type="single" collapsible className="w-full space-y-4">
-              {sections.map((section) => (
+              {sections.map((section, index) => (
                 <MedicalFormSection
                   key={section.id}
                   section={section}
@@ -159,6 +172,9 @@ export default function Home() {
                   onDelete={handleDeleteSection}
                   onSummarize={handleSummarizeSection}
                   isSummarizing={isSummarizing === section.id}
+                  onMove={(direction) => handleMoveSection(index, direction)}
+                  isFirst={index === 0}
+                  isLast={index === sections.length - 1}
                 />
               ))}
             </Accordion>

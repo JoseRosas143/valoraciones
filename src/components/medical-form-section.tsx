@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, Square, Loader2, Clipboard, Check, Trash2, Edit, Save, BrainCircuit } from 'lucide-react';
+import { Mic, Square, Loader2, Clipboard, Check, Trash2, Edit, Save, BrainCircuit, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface MedicalFormSectionProps {
   section: MedicalSection;
@@ -17,9 +17,12 @@ interface MedicalFormSectionProps {
   onDelete: (id: string) => void;
   onSummarize: (id: string) => void;
   isSummarizing: boolean;
+  onMove: (direction: 'up' | 'down') => void;
+  isFirst: boolean;
+  isLast: boolean;
 }
 
-export function MedicalFormSection({ section, onContentChange, onTitleChange, onDelete, onSummarize, isSummarizing }: MedicalFormSectionProps) {
+export function MedicalFormSection({ section, onContentChange, onTitleChange, onDelete, onSummarize, isSummarizing, onMove, isFirst, isLast }: MedicalFormSectionProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -53,7 +56,7 @@ export function MedicalFormSection({ section, onContentChange, onTitleChange, on
           try {
             const result = await transcribeMedicalInterview({ audioDataUri: base64Audio });
             const existingContent = section.content.trim();
-            const newContent = existingContent ? `${existingContent}\\n${result.transcription}` : result.transcription;
+            const newContent = existingContent ? `${existingContent}\n${result.transcription}` : result.transcription;
             onContentChange(section.id, newContent);
           } catch (error) {
             console.error('Transcription failed:', error);
@@ -130,6 +133,14 @@ export function MedicalFormSection({ section, onContentChange, onTitleChange, on
     <AccordionItem value={section.id} className="bg-card border-none rounded-lg shadow-sm overflow-hidden">
         <AccordionTrigger className="px-6 py-4 text-lg font-semibold hover:no-underline data-[state=open]:border-b">
             <div className="flex items-center gap-2 w-full">
+                <div className="flex flex-col">
+                  <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); onMove('up')}} disabled={isFirst} className="h-6 w-6 text-muted-foreground hover:text-foreground disabled:opacity-30">
+                    <ArrowUp className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); onMove('down')}} disabled={isLast} className="h-6 w-6 text-muted-foreground hover:text-foreground disabled:opacity-30">
+                    <ArrowDown className="h-4 w-4" />
+                  </Button>
+                </div>
                 {isEditingTitle ? (
                     <Input 
                         value={editableTitle}
