@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { MedicalForm } from '@/types/medical-form';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, deleteDoc, doc, query, where, writeBatch, setDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, deleteDoc, doc, query, where, setDoc } from 'firebase/firestore';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -66,6 +66,7 @@ export default function TemplatesPage() {
             // If the template is a default one, ensure it's saved to the user's templates first.
             if (template.id === 'default' || template.id === 'note') {
                 const templateRef = doc(db, 'users', user.uid, 'forms', template.id);
+                 // We need to use setDoc to ensure the ID is 'default' or 'note'
                 await setDoc(templateRef, template, { merge: true });
             }
 
@@ -142,12 +143,14 @@ export default function TemplatesPage() {
                         <FilePlus className="mr-2 h-4 w-4" />
                         Usar esta plantilla
                     </Button>
-                    <Link href={`/templates/edit/${template.id}`} passHref>
-                        <Button variant="outline" className="w-full">
-                            <Edit className="mr-2 h-4 w-4" />
-                            Editar
-                        </Button>
-                    </Link>
+                    {(template.id !== 'default' && template.id !== 'note') && (
+                        <Link href={`/templates/edit/${template.id}`} passHref>
+                            <Button variant="outline" className="w-full">
+                                <Edit className="mr-2 h-4 w-4" />
+                                Editar
+                            </Button>
+                        </Link>
+                    )}
                 </div>
               </CardContent>
             </Card>

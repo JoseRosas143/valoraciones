@@ -138,12 +138,14 @@ export default function TemplateEditorPage() {
                                     section={section}
                                     onContentChange={() => {}} // Content is not editable in template editor
                                     isSummarizing={false}
+                                    isDiagnosing={false}
                                     onSave={() => {}} // Not used in template editor
                                     isEditable={true}
                                     onTitleChange={handleTitleChange}
                                     onDelete={handleDeleteSection}
                                     onReset={() => {}}
                                     onSummarize={() => {}}
+                                    onSuggestDiagnosis={() => {}}
                                     onMove={direction => handleMoveSection(index, direction)}
                                     isFirst={index === 0}
                                     isLast={index === currentForm.sections.length - 1}
