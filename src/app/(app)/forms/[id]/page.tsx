@@ -21,30 +21,37 @@ import { Loader2 } from 'lucide-react';
 // Helper to format a string from a nested object for display
 function formatContent(data: any): string {
     if (!data) return '';
-    if (typeof data !== 'object') return String(data);
-
-    // If it's an object with a single 'transcripcion' key (like in the note template), return just the value.
-    if (Object.keys(data).length === 1 && 'transcripcion' in data) {
-      return data.transcripcion || '';
+    // If it's a string, return it directly. This handles simple cases.
+    if (typeof data === 'string') return data;
+    
+    // Check if the data is an object and has the 'transcripcion' key, typical of the 'consulta' section.
+    if (typeof data === 'object' && data !== null && 'transcripcion' in data) {
+        return data.transcripcion || '';
     }
 
-    // Otherwise, format the key-value pairs
-    return Object.entries(data)
-        .map(([key, value]) => {
-            const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
-            if (value && typeof value === 'object' && !Array.isArray(value)) {
-                // For nested objects, indent them.
-                const nestedContent = formatContent(value).trim().split('\n').map(line => `  ${line}`).join('\n');
-                return `${formattedKey}:\n${nestedContent}`;
-            }
-            if (value !== null && value !== undefined && value !== '') {
-                return `${formattedKey}: ${value}`;
-            }
-            // Return key with a space for empty values to maintain structure
-            return `${formattedKey}: `;
-        })
-        .join('\n');
+    // Handle other objects by formatting key-value pairs.
+    if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+        return Object.entries(data)
+            .map(([key, value]) => {
+                const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
+                if (value && typeof value === 'object' && !Array.isArray(value)) {
+                    // For nested objects, indent them.
+                    const nestedContent = formatContent(value).trim().split('\n').map(line => `  ${line}`).join('\n');
+                    return `${formattedKey}:\n${nestedContent}`;
+                }
+                if (value !== null && value !== undefined && value !== '') {
+                    return `${formattedKey}: ${value}`;
+                }
+                // Return key with a space for empty values to maintain structure
+                return `${formattedKey}: `;
+            })
+            .join('\n');
+    }
+
+    // Fallback for any other data types
+    return String(data);
 }
+
 
 export default function FormPage() {
   const [currentForm, setCurrentForm] = useState<MedicalForm | null>(null);
@@ -130,33 +137,39 @@ export default function FormPage() {
   const handleAllSectionsContentChange = useCallback((fullData: TranscribeMedicalInterviewOutput) => {
     if (!currentForm) return;
 
+    // Set the full original transcription to state to make it available for the 'View Original' button
     if (fullData.originalTranscription) {
         setFullTranscription(fullData.originalTranscription);
     }
 
     let hasChanged = false;
     const newSections = currentForm.sections.map(section => {
+      // Find the corresponding data for the section from the AI's output
       const sectionData = fullData[section.id as keyof TranscribeMedicalInterviewOutput];
       
-      // Keep existing content if no new data is provided for this section
+      // If there's no data for this section from the AI, keep the section as is.
       if (!sectionData) {
           return section;
       }
       
-      const content = formatContent(sectionData);
+      const newContent = formatContent(sectionData);
       
-      if (content && section.content !== content) {
+      // If new content is generated and it's different from the existing content, mark as changed.
+      if (newContent && section.content !== newContent) {
         hasChanged = true;
-        return { ...section, content };
+        return { ...section, content: newContent };
       }
+
+      // Otherwise, return the original section.
       return section;
     });
 
+    // If any section has changed, update the form.
     if (hasChanged) {
         const updatedForm = { ...currentForm, sections: newSections, updatedAt: new Date().toISOString() };
         updateAndSaveForm(updatedForm);
     }
-  }, [currentForm, updateAndSaveForm]);
+}, [currentForm, updateAndSaveForm]);
 
 
   const handleSectionContentChange = (id: string, newContent: string) => {
@@ -355,6 +368,7 @@ export default function FormPage() {
                   key={section.id}
                   section={section}
                   allSections={currentForm.sections}
+                  generalAiPrompt={currentForm.generalAiPrompt}
                   onContentChange={handleSectionContentChange}
                   onAllSectionsContentChange={handleAllSectionsContentChange}
                   onReset={handleResetSection}

@@ -14,6 +14,7 @@ import { Label } from './ui/label';
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -42,6 +43,7 @@ interface MedicalFormSectionProps {
   isLast?: boolean;
   isNote?: boolean;
   allSections?: MedicalSection[]; // Pass all sections for transcription context
+  generalAiPrompt?: string;
   fullTranscription?: string;
 }
 
@@ -65,6 +67,7 @@ export function MedicalFormSection({
   isLast,
   isNote = false,
   allSections = [],
+  generalAiPrompt = '',
   fullTranscription = '',
 }: MedicalFormSectionProps) {
   const [isRecording, setIsRecording] = useState(false);
@@ -99,6 +102,7 @@ export function MedicalFormSection({
           try {
             const transcriptionInput: TranscribeMedicalInterviewInput = {
               audioDataUri: base64Audio,
+              generalAiPrompt: generalAiPrompt,
               sections: allSections.map(s => ({
                 id: s.id,
                 title: s.title,
@@ -263,21 +267,21 @@ export function MedicalFormSection({
                       Ver Grabación Original
                     </Button>
                   </AlertDialogTrigger>
-                  <AlertDialogContent>
+                  <AlertDialogContent className="max-w-3xl">
                     <AlertDialogHeader>
                       <AlertDialogTitle>Transcripción Original Completa</AlertDialogTitle>
                       <AlertDialogDescription
-                        className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap"
+                        className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap p-2 bg-muted rounded-md"
                       >
                         {fullTranscription}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <Button variant="outline" onClick={handleCopyOriginalTranscription}>
-                        {isOriginalTranscriptionCopied ? <Check className="mr-2 h-4 w-4 text-green-600" /> : <Clipboard className="mr-2 h-4 w-4" />}
+                      <AlertDialogCancel>Cerrar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleCopyOriginalTranscription}>
+                         {isOriginalTranscriptionCopied ? <Check className="mr-2 h-4 w-4 text-green-600" /> : <Clipboard className="mr-2 h-4 w-4" />}
                         {isOriginalTranscriptionCopied ? 'Copiado' : 'Copiar'}
-                      </Button>
-                      <AlertDialogAction>Cerrar</AlertDialogAction>
+                      </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
@@ -324,7 +328,6 @@ export function MedicalFormSection({
               rows={isEditable ? 3 : 12}
               className="pr-12 text-base"
               disabled={isTranscribing || isSummarizing || isDiagnosing}
-              readOnly={isEditable}
             />
             {!isEditable && (
                 <Button onClick={handleCopy} variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 text-muted-foreground hover:text-foreground" disabled={!section.content}>

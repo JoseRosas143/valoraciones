@@ -11,6 +11,8 @@ import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { addDoc, collection } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { nanoid } from 'nanoid';
 import { PlusCircle, Save, Loader2 } from 'lucide-react';
 
@@ -28,7 +30,8 @@ export default function NewTemplatePage() {
             sections: [],
             isTemplate: true,
             createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
+            generalAiPrompt: 'Eres un asistente de dictado experto. Tu tarea es transcribir y estructurar la información de manera clara y precisa según las secciones provistas.'
         });
     }, []);
 
@@ -122,13 +125,30 @@ export default function NewTemplatePage() {
             </header>
             <main className="flex-1 p-4 md:p-8">
                 <div className="max-w-4xl mx-auto">
-                    <div className="bg-background rounded-lg p-2 md:p-4">
-                        <Input
-                            value={currentForm.name}
-                            onChange={(e) => updateCurrentForm({ ...currentForm, name: e.target.value })}
-                            className="text-3xl font-bold mb-6 text-center"
-                            placeholder="Nombre de la Plantilla"
-                        />
+                    <div className="bg-background rounded-lg p-2 md:p-4 space-y-6">
+                       <div className="space-y-2">
+                             <Label htmlFor="template-name">Nombre de la Plantilla</Label>
+                            <Input
+                                id="template-name"
+                                value={currentForm.name}
+                                onChange={(e) => updateCurrentForm({ ...currentForm, name: e.target.value })}
+                                className="text-2xl font-bold"
+                                placeholder="Nombre de la Plantilla"
+                            />
+                        </div>
+
+                         <div className="space-y-2">
+                          <Label htmlFor="general-ai-prompt">Instrucción General para la IA</Label>
+                          <Textarea
+                            id="general-ai-prompt"
+                            placeholder="Ej: Eres un asistente médico experto en valoraciones preanestésicas. Tu tono debe ser formal y clínico."
+                            value={currentForm.generalAiPrompt}
+                            onChange={(e) => updateCurrentForm({ ...currentForm, generalAiPrompt: e.target.value })}
+                            rows={3}
+                            className="text-sm"
+                          />
+                        </div>
+
                         <Accordion type="single" collapsible className="w-full space-y-4" defaultValue={currentForm.sections[0]?.id}>
                             {currentForm.sections.map((section, index) => (
                                 <MedicalFormSection

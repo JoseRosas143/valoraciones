@@ -23,6 +23,7 @@ const TranscribeMedicalInterviewInputSchema = z.object({
     .describe(
       "The audio recording of the medical interview, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
+  generalAiPrompt: z.string().optional().describe('General instruction for the AI role for the entire form.'),
   sections: z.array(SectionInstructionSchema).optional().describe('Instructions for each section to be filled.'),
 });
 export type TranscribeMedicalInterviewInput = z.infer<
@@ -224,15 +225,16 @@ const transcribeMedicalInterviewPrompt = ai.definePrompt({
   name: 'transcribeMedicalInterviewPrompt',
   input: {schema: TranscribeMedicalInterviewInputSchema},
   output: {schema: TranscribeMedicalInterviewOutputSchema},
-  prompt: `Eres un asistente médico experto en valoración preanestésica y transcripción de dictado. Tu tarea principal es analizar un audio de un interrogatorio médico, extraer la información clínica para rellenar una estructura JSON y proveer una transcripción completa.
+  prompt: `Eres un experto en transcripción y estructuración de dictado. Tu tarea principal es analizar un audio, extraer la información clave para rellenar una estructura JSON y proveer una transcripción completa del audio.
 
-Instrucciones Generales:
-1.  **Transcripción Completa**: Primero, transcribe el audio completo en el campo 'originalTranscription'.
-2.  **Dictado Inteligente**: Tu función es transcribir la conversación y organizarla. Presta especial atención a la información relevante para cada sección del formulario según su título.
-3.  **Flexibilidad**: Si bien debes enfocarte en lo médico, transcribe también información contextual que pueda ser relevante, incluso si no parece estrictamente clínica. El objetivo es una transcripción fiel pero organizada.
-4.  **No Inventar**: Si un campo o sección no se menciona en el audio, déjalo vacío. No inventes información.
-5.  **Instrucciones Específicas de Sección**: El usuario puede proveer instrucciones específicas para cada sección. ¡Síguelas al pie de la letra! Por ejemplo, si una sección pide "transcripción exacta", transcribe todo textualmente para esa sección. Si pide "solo datos médicos", filtra la conversación.
-6.  **Frase Clave "agregar información extra"**: Si en el audio se menciona esta frase, todo el texto que siga debe ser transcrito y colocado en el campo "espacioLibre" de la sección "planComentariosAdicionales".
+Instrucción General de Rol (si se proporciona): {{#if generalAiPrompt}}{{generalAiPrompt}}{{else}}Actúa como un asistente general de dictado.{{/if}}
+
+Instrucciones de Proceso:
+1.  **Transcripción Completa**: Primero, transcribe el audio completo y sin procesar en el campo 'originalTranscription'.
+2.  **Dictado Inteligente y Flexible**: Tu función principal es transcribir la conversación y organizarla en las secciones proporcionadas. Sé flexible: captura la información relevante para cada sección, pero también incluye contenido contextual que pueda ser importante, aunque no sea estrictamente técnico. El objetivo es una transcripción fiel y bien organizada.
+3.  **No Inventar**: Si un campo o sección no se menciona en el audio, déjalo vacío. No inventes información.
+4.  **Prioridad a Instrucciones Específicas**: El usuario puede proveer instrucciones específicas ('aiPrompt') para cada sección. ¡Estas instrucciones tienen la máxima prioridad! Síguelas al pie de la letra. Por ejemplo, si una sección pide "transcripción exacta", transcribe todo textualmente para esa sección.
+5.  **Frase Clave "agregar información extra"**: Si en el audio se menciona esta frase, todo el texto que siga debe ser transcrito y colocado en el campo "espacioLibre" de la sección "planComentariosAdicionales".
 
 Audio para transcribir: {{media url=audioDataUri}}
 
@@ -240,7 +242,7 @@ Secciones a completar (sigue las instrucciones de 'aiPrompt' si se proporcionan)
 {{#each sections}}
 - Sección ID: {{id}}
 - Título: {{title}}
-- Instrucción (aiPrompt): {{#if aiPrompt}}{{aiPrompt}}{{else}}Extraer información relevante del audio correspondiente a este título.{{/if}}
+- Instrucción Específica (aiPrompt): {{#if aiPrompt}}{{aiPrompt}}{{else}}Extraer información relevante del audio correspondiente a este título de forma flexible.{{/if}}
 {{/each}}
 `,
 });

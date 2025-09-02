@@ -172,6 +172,7 @@ export const defaultTemplates: MedicalForm = {
     name: 'Valoración Preanestésica',
     sections: initialSections,
     isTemplate: true,
+    generalAiPrompt: 'Eres un asistente médico experto en valoraciones preanestésicas. Tu tono debe ser formal y clínico. Extrae la información relevante del audio para cada sección.'
 };
 
 export const noteTemplate: MedicalForm = {
@@ -186,7 +187,8 @@ export const noteTemplate: MedicalForm = {
         }
     ],
     isTemplate: true,
-}
+    generalAiPrompt: 'Eres un asistente de dictado para consultas. Transcribe la conversación de la manera más fiel posible.'
+};
 
 
 export const getInitialForm = (template: MedicalForm = defaultTemplates): MedicalForm => {
@@ -208,5 +210,6 @@ export const getInitialForm = (template: MedicalForm = defaultTemplates): Medica
         updatedAt: new Date().toISOString(),
         templateId: template.id,
         sections: newSections,
+        generalAiPrompt: template.generalAiPrompt,
     }
 }

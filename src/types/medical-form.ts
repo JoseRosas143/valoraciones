@@ -14,6 +14,7 @@ export interface MedicalForm {
   createdAt?: string;
   updatedAt?: string;
   templateId?: string;
+  generalAiPrompt?: string; // A general instruction for the AI for the entire form
   // This field will only exist on the frontend after being fetched
   // and should not be written to Firestore.
   userId?: string; 
