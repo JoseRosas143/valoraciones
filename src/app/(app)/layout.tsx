@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -12,13 +13,38 @@ import {
   SidebarFooter,
   SidebarInset,
 } from '@/components/ui/sidebar';
-import { FileText, FilePlus, LayoutTemplate, Stethoscope } from 'lucide-react';
+import { FileText, FilePlus, LayoutTemplate, Stethoscope, LogOut } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
+import { useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+
+function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { user, loading, signOut } = useAuth();
+  const router = useRouter();
 
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  if (loading || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div>Cargando...</div>
+      </div>
+    );
+  }
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push('/login');
+  };
+  
   return (
     <SidebarProvider>
       <Sidebar>
@@ -68,7 +94,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
-          {/* Footer content if any */}
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton onClick={handleSignOut}>
+                <LogOut />
+                Cerrar Sesión
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
@@ -76,4 +109,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </SidebarInset>
     </SidebarProvider>
   );
+}
+
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <AuthProvider>
+      <AppLayoutContent>{children}</AppLayoutContent>
+    </AuthProvider>
+  )
 }
