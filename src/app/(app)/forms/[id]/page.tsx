@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import jsPDF from 'jspdf';
 import { Accordion } from '@/components/ui/accordion';
 import { Header } from '@/components/header';
@@ -35,23 +35,26 @@ function formatContent(data: any, indent = ''): string {
         .join('\n');
 }
 
-export default function FormPage({ params }: { params: { id: string } }) {
+export default function FormPage() {
   const [forms, setForms] = useLocalStorage<MedicalForm[]>('medicalForms', [defaultTemplate]);
   const [currentForm, setCurrentForm] = useState<MedicalForm | null>(null);
   const [isLoadingPdf, setIsLoadingPdf] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
+  const params = useParams();
+  const formId = params.id as string;
+
 
   useEffect(() => {
-    const form = forms.find(f => f.id === params.id);
+    const form = forms.find(f => f.id === formId);
     if (form) {
       setCurrentForm(form);
     } else {
       // If form is not found, redirect to the forms list
       router.push('/forms');
     }
-  }, [params.id, forms, router]);
+  }, [formId, forms, router]);
 
   const updateCurrentForm = (updatedForm: MedicalForm) => {
     setCurrentForm(updatedForm);
