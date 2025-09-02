@@ -11,7 +11,7 @@ import { suggestDiagnosis } from '@/ai/flows/suggest-diagnosis';
 import { useToast } from '@/hooks/use-toast';
 import type { TranscribeMedicalInterviewOutput } from '@/ai/flows/transcribe-medical-interview';
 import { MedicalForm, MedicalSection } from '@/types/medical-form';
-import { noteTemplate, getInitialForm } from '@/lib/forms-utils';
+import { defaultTemplates, noteTemplate, getInitialForm } from '@/lib/forms-utils';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/use-auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -20,25 +20,27 @@ import { Loader2 } from 'lucide-react';
 
 // Helper to format a string from a nested object for display
 function formatContent(data: any): string {
-    if (!data) return '';
+    if (data === null || data === undefined) return '';
     if (typeof data !== 'object') {
         return String(data);
     }
+    // If it's an object with a single 'transcripcion' key, just return the value.
+    if (Object.keys(data).length === 1 && 'transcripcion' in data) {
+      return data.transcripcion || '';
+    }
+
     return Object.entries(data)
         .map(([key, value]) => {
-             // Do not include the key if it's a general transcription object
-            if (key === 'transcripcion' && typeof value === 'string') {
-                return value;
-            }
             const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
             if (value && typeof value === 'object' && !Array.isArray(value)) {
-                return `${formattedKey}:\n${formatContent(value)}`;
+                // For nested objects, indent them.
+                const nestedContent = formatContent(value).trim().split('\n').map(line => `  ${line}`).join('\n');
+                return `${formattedKey}:\n${nestedContent}`;
             }
-            if (value) {
+            if (value !== null && value !== undefined && value !== '') {
                 return `${formattedKey}: ${value}`;
             }
             return `${formattedKey}: `;
-
         })
         .join('\n');
 }
@@ -94,7 +96,7 @@ export default function FormPage() {
     }
   }, [user, formId, fetchForm]);
 
-  const saveForm = useCallback(async (formToSave: MedicalForm) => {
+  const saveForm = useCallback(async (formToSave: MedicalForm | null) => {
     if (!user || !formToSave) return;
     setIsSaving(true);
     try {
@@ -122,24 +124,31 @@ export default function FormPage() {
     setCurrentForm(updatedForm);
     saveForm(updatedForm);
   }, [saveForm]);
-
-  const handleAllSectionsContentChange = (fullData: TranscribeMedicalInterviewOutput) => {
+  
+  const handleAllSectionsContentChange = useCallback((fullData: TranscribeMedicalInterviewOutput) => {
     if (!currentForm) return;
 
+    let hasChanged = false;
     const newSections = currentForm.sections.map(section => {
-      // The key for the data can be the section's ID.
+      // Find the data from the AI output that matches the section's ID.
       const sectionData = fullData[section.id as keyof TranscribeMedicalInterviewOutput];
+      
       if (sectionData) {
         // Format the content from the structured object received from the AI
         const content = formatContent(sectionData);
-        return { ...section, content };
+        if (content && section.content !== content) {
+          hasChanged = true;
+          return { ...section, content };
+        }
       }
       return section;
     });
 
-    const updatedForm = { ...currentForm, sections: newSections, updatedAt: new Date().toISOString() };
-    updateAndSaveForm(updatedForm);
-};
+    if (hasChanged) {
+        const updatedForm = { ...currentForm, sections: newSections, updatedAt: new Date().toISOString() };
+        updateAndSaveForm(updatedForm);
+    }
+  }, [currentForm, updateAndSaveForm]);
 
 
   const handleSectionContentChange = (id: string, newContent: string) => {
@@ -337,6 +346,7 @@ export default function FormPage() {
                 <MedicalFormSection
                   key={section.id}
                   section={section}
+                  allSections={currentForm.sections}
                   onContentChange={handleSectionContentChange}
                   onAllSectionsContentChange={handleAllSectionsContentChange}
                   onReset={handleResetSection}
@@ -357,3 +367,5 @@ export default function FormPage() {
     </div>
   );
 }
+
+    
