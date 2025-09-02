@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import {
     Accordion,
 } from '@/components/ui/accordion';
@@ -12,19 +11,7 @@ import { Button } from '@/components/ui/button';
 import { summarizeMedicalSection } from '@/ai/flows/summarize-medical-section';
 import { useToast } from '@/hooks/use-toast';
 import type { TranscribeMedicalInterviewOutput } from '@/ai/flows/transcribe-medical-interview';
-import { Pencil, Trash2, Save, X, PlusCircle, ArrowUp, ArrowDown } from 'lucide-react';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-
+import { ArrowUp, ArrowDown } from 'lucide-react';
 
 const initialSections: MedicalSection[] = [
     {
@@ -225,6 +212,23 @@ export default function Home() {
   const [isSummarizing, setIsSummarizing] = useState<string | null>(null);
   const { toast } = useToast();
 
+  useEffect(() => {
+    try {
+      const savedData = localStorage.getItem('medicalFormData');
+      if (savedData) {
+        setSections(JSON.parse(savedData));
+      }
+    } catch (error) {
+      console.error("Failed to load data from localStorage", error);
+      toast({
+        variant: 'destructive',
+        title: 'Error al Cargar',
+        description: 'No se pudieron cargar los datos guardados.',
+      });
+    }
+  }, [toast]);
+
+
   const handleAllSectionsContentChange = (fullData: TranscribeMedicalInterviewOutput) => {
     const newSections = sections.map(section => {
       const sectionData = fullData[section.id as keyof TranscribeMedicalInterviewOutput];
@@ -276,6 +280,23 @@ export default function Home() {
     }
   };
 
+  const handleSaveForm = () => {
+    try {
+      localStorage.setItem('medicalFormData', JSON.stringify(sections));
+      toast({
+        title: 'Formulario Guardado',
+        description: 'El estado actual del formulario ha sido guardado en tu navegador.',
+      });
+    } catch (error) {
+       console.error("Failed to save data to localStorage", error);
+       toast({
+        variant: 'destructive',
+        title: 'Error al Guardar',
+        description: 'No se pudo guardar el formulario. Puede que el almacenamiento esté lleno.',
+      });
+    }
+  };
+
   const handleExportDoc = () => {
     const header = `<h1 style="font-family: Arial, sans-serif; font-size: 24px; font-weight: bold;">Formulario Médico - MediScribe Assist</h1>`;
     const content = sections.map(section => 
@@ -308,7 +329,7 @@ export default function Home() {
     y += 10;
 
     for (const section of sections) {
-        if (y > pageHeight - margin) {
+        if (y > pageHeight - margin - 10) { // check for space for title
             pdf.addPage();
             y = margin;
         }
@@ -316,8 +337,12 @@ export default function Home() {
         pdf.setFontSize(14);
         pdf.setFont('helvetica', 'bold');
         const titleLines = pdf.splitTextToSize(section.title, pageWidth - margin * 2);
+        if (y + (titleLines.length * 7) > pageHeight - margin) {
+            pdf.addPage();
+            y = margin;
+        }
         pdf.text(titleLines, margin, y);
-        y += (titleLines.length * 5);
+        y += (titleLines.length * 7);
 
         pdf.setFontSize(10);
         pdf.setFont('helvetica', 'normal');
@@ -377,6 +402,7 @@ export default function Home() {
                   onMove={(direction) => handleMoveSection(index, direction)}
                   isFirst={index === 0}
                   isLast={index === sections.length - 1}
+                  onSave={handleSaveForm}
                 />
               ))}
             </Accordion>
@@ -386,5 +412,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

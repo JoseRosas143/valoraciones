@@ -7,7 +7,7 @@ import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, Square, Loader2, Clipboard, Check, RotateCcw, BrainCircuit, ArrowUp, ArrowDown } from 'lucide-react';
+import { Mic, Square, Loader2, Clipboard, Check, RotateCcw, BrainCircuit, ArrowUp, ArrowDown, Save } from 'lucide-react';
 
 interface MedicalFormSectionProps {
   section: MedicalSection;
@@ -19,9 +19,10 @@ interface MedicalFormSectionProps {
   onMove: (direction: 'up' | 'down') => void;
   isFirst: boolean;
   isLast: boolean;
+  onSave: () => void;
 }
 
-export function MedicalFormSection({ section, onContentChange, onAllSectionsContentChange, onReset, onSummarize, isSummarizing, onMove, isFirst, isLast }: MedicalFormSectionProps) {
+export function MedicalFormSection({ section, onContentChange, onAllSectionsContentChange, onReset, onSummarize, isSummarizing, onMove, isFirst, isLast, onSave }: MedicalFormSectionProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -115,25 +116,33 @@ export function MedicalFormSection({ section, onContentChange, onAllSectionsCont
 
   return (
     <AccordionItem value={section.id} className="bg-card border-none rounded-lg shadow-sm overflow-hidden">
-        <AccordionTrigger className="px-6 py-4 text-lg font-semibold hover:no-underline data-[state=open]:border-b">
-            <div className="flex items-center gap-2 w-full">
-                <span className="flex-1 text-left">{section.title}</span>
-            </div>
+      <AccordionTrigger className="px-6 py-4 text-lg font-semibold hover:no-underline data-[state=open]:border-b">
+        <div className="flex items-center gap-2 w-full">
+            <span className="flex-1 text-left">{section.title}</span>
+        </div>
       </AccordionTrigger>
       <AccordionContent className="px-6 pb-6 pt-4">
-        <div className="flex justify-between items-center mb-4 -mt-4">
-            <div className="flex">
-                <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); onMove('up')}} disabled={isFirst} className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-30">
+        <div className="flex justify-between items-center mb-2">
+            <div className="flex items-center">
+                <Button variant="ghost" size="icon" onClick={() => onMove('up')} disabled={isFirst} className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-30">
                     <ArrowUp className="h-5 w-5" />
+                    <span className="sr-only">Mover hacia arriba</span>
                 </Button>
-                <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); onMove('down')}} disabled={isLast} className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-30">
+                <Button variant="ghost" size="icon" onClick={() => onMove('down')} disabled={isLast} className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-30">
                     <ArrowDown className="h-5 w-5" />
+                    <span className="sr-only">Mover hacia abajo</span>
                 </Button>
             </div>
-             <Button variant="ghost" size="icon" onClick={() => onReset(section.id)} className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                <RotateCcw className="h-5 w-5" />
-                <span className="sr-only">Reiniciar sección</span>
-            </Button>
+             <div className="flex items-center">
+                <Button variant="ghost" size="icon" onClick={onSave} className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                    <Save className="h-5 w-5" />
+                    <span className="sr-only">Guardar Formulario</span>
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => onReset(section.id)} className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                    <RotateCcw className="h-5 w-5" />
+                    <span className="sr-only">Reiniciar sección</span>
+                </Button>
+            </div>
         </div>
         <div className="space-y-4">
           <div className="flex items-start gap-4">
