@@ -20,15 +20,15 @@ import { Loader2 } from 'lucide-react';
 
 // Helper to format a string from a nested object for display
 function formatContent(data: any): string {
-    if (data === null || data === undefined) return '';
-    if (typeof data !== 'object') {
-        return String(data);
-    }
-    // If it's an object with a single 'transcripcion' key, just return the value.
+    if (!data) return '';
+    if (typeof data !== 'object') return String(data);
+
+    // If it's an object with a single 'transcripcion' key (like in the note template), return just the value.
     if (Object.keys(data).length === 1 && 'transcripcion' in data) {
       return data.transcripcion || '';
     }
 
+    // Otherwise, format the key-value pairs
     return Object.entries(data)
         .map(([key, value]) => {
             const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
@@ -40,6 +40,7 @@ function formatContent(data: any): string {
             if (value !== null && value !== undefined && value !== '') {
                 return `${formattedKey}: ${value}`;
             }
+            // Return key with a space for empty values to maintain structure
             return `${formattedKey}: `;
         })
         .join('\n');
@@ -52,6 +53,7 @@ export default function FormPage() {
   const [isLoadingPdf, setIsLoadingPdf] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState<string | null>(null);
   const [isDiagnosing, setIsDiagnosing] = useState<string | null>(null);
+  const [fullTranscription, setFullTranscription] = useState('');
   
   const { toast } = useToast();
   const router = useRouter();
@@ -128,18 +130,18 @@ export default function FormPage() {
   const handleAllSectionsContentChange = useCallback((fullData: TranscribeMedicalInterviewOutput) => {
     if (!currentForm) return;
 
+    if (fullData.originalTranscription) {
+        setFullTranscription(fullData.originalTranscription);
+    }
+
     let hasChanged = false;
     const newSections = currentForm.sections.map(section => {
-      // Find the data from the AI output that matches the section's ID.
       const sectionData = fullData[section.id as keyof TranscribeMedicalInterviewOutput];
+      const content = formatContent(sectionData);
       
-      if (sectionData) {
-        // Format the content from the structured object received from the AI
-        const content = formatContent(sectionData);
-        if (content && section.content !== content) {
-          hasChanged = true;
-          return { ...section, content };
-        }
+      if (content && section.content !== content) {
+        hasChanged = true;
+        return { ...section, content };
       }
       return section;
     });
@@ -358,6 +360,7 @@ export default function FormPage() {
                   isSaving={isSaving}
                   isEditable={false}
                   isNote={isNoteTemplate}
+                  fullTranscription={fullTranscription}
                 />
               ))}
             </Accordion>
@@ -367,5 +370,3 @@ export default function FormPage() {
     </div>
   );
 }
-
-    

@@ -191,6 +191,7 @@ const ConsultaSchema = z.object({
 
 
 const TranscribeMedicalInterviewOutputSchema = z.object({
+  originalTranscription: z.string().optional().describe('The full, raw, unprocessed transcription of the entire audio.'),
   hospitalInfo: HospitalInfoSchema.optional().describe('Información del hospital y servicio.'),
   datosPaciente: DatosPacienteSchema.optional().describe('Datos de identificación del paciente.'),
   antecedentesHeredofamiliares: AntecedentesHeredofamiliaresSchema.optional().describe('Antecedentes médicos de la familia del paciente.'),
@@ -223,14 +224,15 @@ const transcribeMedicalInterviewPrompt = ai.definePrompt({
   name: 'transcribeMedicalInterviewPrompt',
   input: {schema: TranscribeMedicalInterviewInputSchema},
   output: {schema: TranscribeMedicalInterviewOutputSchema},
-  prompt: `Eres un asistente médico experto en valoración preanestésica y transcripción de dictado. Tu tarea principal es analizar un audio de un interrogatorio médico y extraer la información clínica para rellenar una estructura JSON.
+  prompt: `Eres un asistente médico experto en valoración preanestésica y transcripción de dictado. Tu tarea principal es analizar un audio de un interrogatorio médico, extraer la información clínica para rellenar una estructura JSON y proveer una transcripción completa.
 
 Instrucciones Generales:
-1.  **Dictado Inteligente**: Tu función es transcribir la conversación. Presta especial atención a la información relevante para cada sección del formulario según su título.
-2.  **Flexibilidad**: Si bien debes enfocarte en lo médico, transcribe también información contextual que pueda ser relevante, incluso si no parece estrictamente clínica. El objetivo es una transcripción fiel pero organizada.
-3.  **No Inventar**: Si un campo o sección no se menciona en el audio, déjalo vacío. No inventes información.
-4.  **Instrucciones Específicas de Sección**: El usuario puede proveer instrucciones específicas para cada sección. ¡Síguelas al pie de la letra! Por ejemplo, si una sección pide "transcripción exacta", transcribe todo textualmente para esa sección. Si pide "solo datos médicos", filtra la conversación.
-5.  **Frase Clave "agregar información extra"**: Si en el audio se menciona esta frase, todo el texto que siga debe ser transcrito y colocado en el campo "espacioLibre" de la sección "planComentariosAdicionales".
+1.  **Transcripción Completa**: Primero, transcribe el audio completo en el campo 'originalTranscription'.
+2.  **Dictado Inteligente**: Tu función es transcribir la conversación y organizarla. Presta especial atención a la información relevante para cada sección del formulario según su título.
+3.  **Flexibilidad**: Si bien debes enfocarte en lo médico, transcribe también información contextual que pueda ser relevante, incluso si no parece estrictamente clínica. El objetivo es una transcripción fiel pero organizada.
+4.  **No Inventar**: Si un campo o sección no se menciona en el audio, déjalo vacío. No inventes información.
+5.  **Instrucciones Específicas de Sección**: El usuario puede proveer instrucciones específicas para cada sección. ¡Síguelas al pie de la letra! Por ejemplo, si una sección pide "transcripción exacta", transcribe todo textualmente para esa sección. Si pide "solo datos médicos", filtra la conversación.
+6.  **Frase Clave "agregar información extra"**: Si en el audio se menciona esta frase, todo el texto que siga debe ser transcrito y colocado en el campo "espacioLibre" de la sección "planComentariosAdicionales".
 
 Audio para transcribir: {{media url=audioDataUri}}
 

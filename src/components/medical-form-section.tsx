@@ -7,9 +7,19 @@ import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, Square, Loader2, Clipboard, Check, RotateCcw, BrainCircuit, Save, Trash2, ArrowUp, ArrowDown, FileQuestion } from 'lucide-react';
+import { Mic, Square, Loader2, Clipboard, Check, RotateCcw, BrainCircuit, Save, Trash2, ArrowUp, ArrowDown, FileQuestion, MessageSquareText } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface MedicalFormSectionProps {
   section: MedicalSection;
@@ -31,6 +41,7 @@ interface MedicalFormSectionProps {
   isLast?: boolean;
   isNote?: boolean;
   allSections?: MedicalSection[]; // Pass all sections for transcription context
+  fullTranscription?: string;
 }
 
 export function MedicalFormSection({
@@ -53,6 +64,7 @@ export function MedicalFormSection({
   isLast,
   isNote = false,
   allSections = [],
+  fullTranscription = '',
 }: MedicalFormSectionProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -213,8 +225,8 @@ export function MedicalFormSection({
           </div>
         </div>
         <div className="space-y-4">
-          <div className="flex items-start gap-4">
-            <div className='flex flex-col gap-2'>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className='flex items-center gap-2'>
               {!isEditable && onAllSectionsContentChange && (
                 <Button onClick={handleToggleRecording} variant="outline" size="sm" disabled={isTranscribing || isSummarizing || isDiagnosing}>
                   {isRecording ? <Square className="mr-2 h-4 w-4 text-red-500 fill-current" /> : <Mic className="mr-2 h-4 w-4" />}
@@ -232,6 +244,29 @@ export function MedicalFormSection({
                     {isDiagnosing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileQuestion className="mr-2 h-4 w-4" />}
                     Posible Diagnóstico
                 </Button>
+              )}
+               {!isEditable && fullTranscription && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <MessageSquareText className="mr-2 h-4 w-4" />
+                      Ver Grabación Original
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Transcripción Original Completa</AlertDialogTitle>
+                      <AlertDialogDescription
+                        className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap"
+                      >
+                        {fullTranscription}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogAction>Cerrar</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
             </div>
             <div className="flex items-center gap-4 h-9">
