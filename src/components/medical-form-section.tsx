@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import type { MedicalSection } from '@/app/page';
+import type { MedicalSection } from '@/types/medical-form';
 import { transcribeMedicalInterview, TranscribeMedicalInterviewOutput } from '@/ai/flows/transcribe-medical-interview';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, Square, Loader2, Clipboard, Check, RotateCcw, BrainCircuit, ArrowUp, ArrowDown, Save } from 'lucide-react';
+import { Mic, Square, Loader2, Clipboard, Check, RotateCcw, BrainCircuit, Save } from 'lucide-react';
+import { Input } from './ui/input';
 
 interface MedicalFormSectionProps {
   section: MedicalSection;
@@ -16,13 +17,24 @@ interface MedicalFormSectionProps {
   onReset: (id: string) => void;
   onSummarize: (id: string) => void;
   isSummarizing: boolean;
-  onMove: (direction: 'up' | 'down') => void;
-  isFirst: boolean;
-  isLast: boolean;
   onSave: () => void;
+  onTitleChange?: (id: string, newTitle: string) => void;
+  onDelete?: (id: string) => void;
+  isEditable: boolean;
 }
 
-export function MedicalFormSection({ section, onContentChange, onAllSectionsContentChange, onReset, onSummarize, isSummarizing, onMove, isFirst, isLast, onSave }: MedicalFormSectionProps) {
+export function MedicalFormSection({
+  section,
+  onContentChange,
+  onAllSectionsContentChange,
+  onReset,
+  onSummarize,
+  isSummarizing,
+  onSave,
+  onTitleChange,
+  onDelete,
+  isEditable,
+}: MedicalFormSectionProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -118,21 +130,20 @@ export function MedicalFormSection({ section, onContentChange, onAllSectionsCont
     <AccordionItem value={section.id} className="bg-card border-none rounded-lg shadow-sm overflow-hidden">
       <AccordionTrigger className="px-6 py-4 text-lg font-semibold hover:no-underline data-[state=open]:border-b">
         <div className="flex items-center gap-2 w-full">
-            <span className="flex-1 text-left">{section.title}</span>
+            {isEditable && onTitleChange ? (
+              <Input
+                value={section.title}
+                onChange={(e) => onTitleChange(section.id, e.target.value)}
+                className="text-lg font-semibold"
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <span className="flex-1 text-left">{section.title}</span>
+            )}
         </div>
       </AccordionTrigger>
       <AccordionContent className="px-6 pb-6 pt-4">
-        <div className="flex justify-between items-center mb-2">
-            <div className="flex items-center">
-                <Button variant="ghost" size="icon" onClick={() => onMove('up')} disabled={isFirst} className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-30">
-                    <ArrowUp className="h-5 w-5" />
-                    <span className="sr-only">Mover hacia arriba</span>
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => onMove('down')} disabled={isLast} className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-30">
-                    <ArrowDown className="h-5 w-5" />
-                    <span className="sr-only">Mover hacia abajo</span>
-                </Button>
-            </div>
+        <div className="flex justify-end items-center mb-2">
              <div className="flex items-center">
                 <Button variant="ghost" size="icon" onClick={onSave} className="h-8 w-8 text-muted-foreground hover:text-foreground">
                     <Save className="h-5 w-5" />
@@ -142,15 +153,28 @@ export function MedicalFormSection({ section, onContentChange, onAllSectionsCont
                     <RotateCcw className="h-5 w-5" />
                     <span className="sr-only">Reiniciar sección</span>
                 </Button>
+                {isEditable && onDelete && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onDelete(section.id)}
+                    className="h-8 w-8 text-red-500 hover:text-red-600"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                    <span className="sr-only">Eliminar sección</span>
+                  </Button>
+                )}
             </div>
         </div>
         <div className="space-y-4">
           <div className="flex items-start gap-4">
             <div className='flex flex-col gap-2'>
-              <Button onClick={handleToggleRecording} variant="outline" size="sm" disabled={isTranscribing || isSummarizing}>
-                {isRecording ? <Square className="mr-2 h-4 w-4 text-red-500 fill-current" /> : <Mic className="mr-2 h-4 w-4" />}
-                {isRecording ? 'Detener' : 'Grabar y Rellenar'}
-              </Button>
+              {!isEditable && (
+                <Button onClick={handleToggleRecording} variant="outline" size="sm" disabled={isTranscribing || isSummarizing}>
+                  {isRecording ? <Square className="mr-2 h-4 w-4 text-red-500 fill-current" /> : <Mic className="mr-2 h-4 w-4" />}
+                  {isRecording ? 'Detener' : 'Grabar y Rellenar'}
+                </Button>
+              )}
               <Button onClick={() => onSummarize(section.id)} variant="outline" size="sm" disabled={isTranscribing || isSummarizing || !section.content}>
                 {isSummarizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
                 Resumir Sección
@@ -178,7 +202,7 @@ export function MedicalFormSection({ section, onContentChange, onAllSectionsCont
             <Textarea
               value={section.content}
               onChange={(e) => onContentChange(section.id, e.target.value)}
-              placeholder={`Haga clic en 'Grabar' para transcribir o escriba aquí...`}
+              placeholder={isEditable ? "Define el contenido de la plantilla para esta sección" : "Haga clic en 'Grabar' para transcribir o escriba aquí..."}
               rows={12}
               className="pr-12 text-base"
               disabled={isTranscribing || isSummarizing}
@@ -193,3 +217,6 @@ export function MedicalFormSection({ section, onContentChange, onAllSectionsCont
     </AccordionItem>
   );
 }
+
+// Add Trash2 to imports
+import { Mic, Square, Loader2, Clipboard, Check, RotateCcw, BrainCircuit, Save, Trash2 } from 'lucide-react';
