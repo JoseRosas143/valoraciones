@@ -210,6 +210,6 @@ export const getInitialForm = (template: MedicalForm = defaultTemplates): Medica
         updatedAt: new Date().toISOString(),
         templateId: template.id,
         sections: newSections,
-        generalAiPrompt: template.generalAiPrompt,
+        generalAiPrompt: template.generalAiPrompt || '',
     }
 }
