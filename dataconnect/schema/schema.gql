@@ -1,47 +1,24 @@
 
-type Movie @table {
-  id: String! @primaryKey @default(expression: "gen_random_uuid()")
-  title: String!
-  genre: String
-  imageUrl: String
-  metadata: MovieMetadata @foreignKey(references: "id")
-  reviews: [Review] @relation(on: "movieId")
+type Movie @table(name: "movies") {
+    id: String! @pk
+    title: String!
+    genre: String
+    imageUrl: String
+    reviews: [Review] @foreignKey(from: "id", to: "movieId")
 }
 
-type MovieMetadata @table {
-  id: String! @primaryKey @default(expression: "gen_random_uuid()")
-  releaseYear: Int
-  rating: Float
-  description: String
+type User @table(name: "users") {
+    id: String! @pk
+    username: String
+    reviews: [Review] @foreignKey(from: "id", to: "userId")
 }
 
-type User @table {
-  id: String! @primaryKey
-  username: String
-  reviews: [Review] @relation(on: "userId")
-}
-
-type Review @table {
-  userId: String! @primaryKey
-  movieId: String! @primaryKey
-  reviewText: String
-  rating: Int
-  reviewDate: Timestamp! @default(expression: "now()")
-  user: User! @foreignKey(references: "id")
-  movie: Movie! @foreignKey(references: "id")
-}
-
-type Query {
-  listMovies: [Movie]! @permission(public: true)
-  listUsers: [User]! @permission(public: true)
-  listUserReviews: User @permission(public: true) @auth
-  getMovieById(id: String!): Movie @permission(public: true)
-  searchMovie(titleInput: String, genre: String): [Movie]! @permission(public: true)
-}
-
-type Mutation {
-  createMovie(title: String!, genre: String, imageUrl: String): Movie! @permission(public: true)
-  upsertUser(username: String): User! @permission(public: true) @auth
-  addReview(movieId: String!, rating: Int!, reviewText: String!): Review! @permission(public: true) @auth
-  deleteReview(movieId: String!): Review! @permission(public: true) @auth
+type Review @table(name: "reviews") {
+    userId: String!
+    movieId: String!
+    reviewText: String
+    rating: Int
+    reviewDate: Timestamp
+    movie: Movie @foreignKey(from: "movieId", to: "id")
+    user: User @foreignKey(from: "userId", to: "id")
 }

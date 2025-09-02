@@ -1,29 +1,62 @@
-mutation AddNewReview @auth(level: USER) {
-  review_insert(data: {userId_expr: "auth.uid", movieId: "550e8400-e29b-41d4-a716-446655440000", watchId: "550e8400-e29b-41d4-a716-446655440000", rating: 5, isPublic: true})
-}
 
-query GetMyMovieLists @auth(level: USER) {
-  movieLists(where: {userId: {eq_expr: "auth.uid"}}) {
+query ListMovies {
+  movies {
     id
-    name
-    description
+    title
+    imageUrl
+    genre
   }
 }
 
-mutation UpdateMovieList($movieListId: UUID!, $name: String, $description: String, $isPublic: Boolean) @auth(level: USER) {
-  movieList_update(
-    key: {id: $movieListId}
-    data: {name: $name, description: $description, isPublic: $isPublic}
-  )
-}
-
-query ListPublicMovieLists @auth(level: PUBLIC) {
-  movieLists(where: {isPublic: {eq: true}}) {
+query GetMovieById($id: String!) {
+  movies(id: { eq: $id }) {
     id
-    name
-    description
-    user {
-      displayName
+    title
+    imageUrl
+    genre
+    reviews {
+      reviewText
+      reviewDate
+      rating
+      user {
+        id
+        username
+      }
     }
   }
+}
+
+query ListUsers {
+    users {
+        id
+        username
+    }
+}
+
+query ListUserReviews {
+  users(id: { eq: "auth.uid" }) {
+    id
+    username
+    reviews {
+      rating
+      reviewDate
+      reviewText
+      movie {
+        id
+        title
+      }
+    }
+  }
+}
+
+query SearchMovie($titleInput: String, $genre: String) {
+    movies(filter: {
+        title: { like: $titleInput },
+        genre: { eq: $genre }
+    }) {
+        id
+        title
+        genre
+        imageUrl
+    }
 }
