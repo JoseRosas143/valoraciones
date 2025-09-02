@@ -6,16 +6,14 @@ import { transcribeMedicalInterview, TranscribeMedicalInterviewOutput } from '@/
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, Square, Loader2, Clipboard, Check, Trash2, Edit, Save, BrainCircuit, ArrowUp, ArrowDown } from 'lucide-react';
+import { Mic, Square, Loader2, Clipboard, Check, RotateCcw, BrainCircuit, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface MedicalFormSectionProps {
   section: MedicalSection;
   onContentChange: (id: string, newContent: string) => void;
   onAllSectionsContentChange: (fullData: TranscribeMedicalInterviewOutput) => void;
-  onTitleChange: (id: string, newTitle: string) => void;
-  onDelete: (id: string) => void;
+  onReset: (id: string) => void;
   onSummarize: (id: string) => void;
   isSummarizing: boolean;
   onMove: (direction: 'up' | 'down') => void;
@@ -23,12 +21,10 @@ interface MedicalFormSectionProps {
   isLast: boolean;
 }
 
-export function MedicalFormSection({ section, onContentChange, onAllSectionsContentChange, onTitleChange, onDelete, onSummarize, isSummarizing, onMove, isFirst, isLast }: MedicalFormSectionProps) {
+export function MedicalFormSection({ section, onContentChange, onAllSectionsContentChange, onReset, onSummarize, isSummarizing, onMove, isFirst, isLast }: MedicalFormSectionProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [editableTitle, setEditableTitle] = useState(section.title);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const { toast } = useToast();
@@ -109,21 +105,6 @@ export function MedicalFormSection({ section, onContentChange, onAllSectionsCont
     }
   };
 
-  const handleTitleEditToggle = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isEditingTitle) {
-      onTitleChange(section.id, editableTitle);
-    }
-    setIsEditingTitle(!isEditingTitle);
-  };
-  
-  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      onTitleChange(section.id, editableTitle);
-      setIsEditingTitle(false);
-    }
-  }
-
   useEffect(() => {
     return () => {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
@@ -136,18 +117,7 @@ export function MedicalFormSection({ section, onContentChange, onAllSectionsCont
     <AccordionItem value={section.id} className="bg-card border-none rounded-lg shadow-sm overflow-hidden">
         <AccordionTrigger className="px-6 py-4 text-lg font-semibold hover:no-underline data-[state=open]:border-b">
             <div className="flex items-center gap-2 w-full">
-                {isEditingTitle ? (
-                    <Input 
-                        value={editableTitle}
-                        onChange={(e) => setEditableTitle(e.target.value)}
-                        onKeyDown={handleTitleKeyDown}
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-lg font-semibold"
-                        autoFocus
-                    />
-                ) : (
-                    <span className="flex-1 text-left">{section.title}</span>
-                )}
+                <span className="flex-1 text-left">{section.title}</span>
             </div>
       </AccordionTrigger>
       <AccordionContent className="px-6 pb-6 pt-4">
@@ -160,16 +130,10 @@ export function MedicalFormSection({ section, onContentChange, onAllSectionsCont
                     <ArrowDown className="h-5 w-5" />
                 </Button>
             </div>
-            <div className="flex items-center">
-                 <Button variant="ghost" size="icon" onClick={handleTitleEditToggle} className="h-8 w-8">
-                    {isEditingTitle ? <Save className="h-5 w-5" /> : <Edit className="h-5 w-5" />}
-                    <span className="sr-only">{isEditingTitle ? 'Save title' : 'Edit title'}</span>
-                </Button>
-                <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); onDelete(section.id)}} className="h-8 w-8 text-destructive/70 hover:text-destructive">
-                    <Trash2 className="h-5 w-5" />
-                    <span className="sr-only">Delete section</span>
-                </Button>
-            </div>
+             <Button variant="ghost" size="icon" onClick={() => onReset(section.id)} className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                <RotateCcw className="h-5 w-5" />
+                <span className="sr-only">Reiniciar sección</span>
+            </Button>
         </div>
         <div className="space-y-4">
           <div className="flex items-start gap-4">

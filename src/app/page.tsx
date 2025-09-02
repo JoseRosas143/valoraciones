@@ -8,7 +8,6 @@ import { Accordion } from '@/components/ui/accordion';
 import { Header } from '@/components/header';
 import { MedicalFormSection } from '@/components/medical-form-section';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
 import { summarizeMedicalSection } from '@/ai/flows/summarize-medical-section';
 import { useToast } from '@/hooks/use-toast';
 import type { TranscribeMedicalInterviewOutput } from '@/ai/flows/transcribe-medical-interview';
@@ -223,26 +222,16 @@ export default function Home() {
       )
     );
   };
-  
-  const handleSectionTitleChange = (id: string, newTitle: string) => {
-    setSections(prevSections =>
-      prevSections.map(section =>
-        section.id === id ? { ...section, title: newTitle } : section
-      )
-    );
-  }
 
-  const handleDeleteSection = (id: string) => {
-    setSections(prevSections => prevSections.filter(section => section.id !== id));
-  }
-
-  const handleAddSection = () => {
-    const newSection: MedicalSection = {
-      id: `custom-${Date.now()}`,
-      title: 'Nueva Sección',
-      content: '',
-    };
-    setSections(prevSections => [...prevSections, newSection]);
+  const handleResetSection = (id: string) => {
+    const originalSection = initialSections.find(section => section.id === id);
+    if (originalSection) {
+        handleSectionContentChange(id, originalSection.content);
+        toast({
+            title: 'Sección Reiniciada',
+            description: `El contenido de "${originalSection.title}" ha sido restaurado.`,
+        });
+    }
   };
 
   const handleSummarizeSection = async (id: string) => {
@@ -349,8 +338,7 @@ export default function Home() {
                   section={section}
                   onContentChange={handleSectionContentChange}
                   onAllSectionsContentChange={handleAllSectionsContentChange}
-                  onTitleChange={handleSectionTitleChange}
-                  onDelete={handleDeleteSection}
+                  onReset={handleResetSection}
                   onSummarize={handleSummarizeSection}
                   isSummarizing={isSummarizing === section.id}
                   onMove={(direction) => handleMoveSection(index, direction)}
@@ -359,12 +347,6 @@ export default function Home() {
                 />
               ))}
             </Accordion>
-             <div className="mt-6 text-center">
-                <Button onClick={handleAddSection} variant="outline">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Agregar Sección
-                </Button>
-            </div>
           </div>
         </div>
       </main>
