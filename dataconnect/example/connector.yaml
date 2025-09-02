@@ -6,3 +6,13 @@ generate:
       packageJsonDir: ../..
       react: true
       angular: false
+    - outputDir: ../../valodi/src/dataconnect-generated
+      package: "@dataconnect/generated"
+      packageJsonDir: ../../valodi
+      react: false
+      angular: false
+    - outputDir: ../../functions/src/dataconnect-generated
+      package: "@dataconnect/generated"
+      packageJsonDir: ../../functions
+      react: false
+      angular: false

@@ -1,52 +1,31 @@
-# Example schema for simple movie review app
-
-# User table is keyed by Firebase Auth UID.
-type User @table {
-  # `@default(expr: "auth.uid")` sets it to Firebase Auth UID during insert and upsert.
-  id: String! @default(expr: "auth.uid")
-  username: String! @col(dataType: "varchar(50)")
-  # The `user: User!` field in the Review table generates the following one-to-many query field.
-  #  reviews_on_user: [Review!]!
-  # The `Review` join table the following many-to-many query field.
-  #  movies_via_Review: [Movie!]!
-}
-
-# Movie is keyed by a randomly generated UUID.
-type Movie @table {
-  # If you do not pass a 'key' to `@table`, Data Connect automatically adds the following 'id' column.
-  # Feel free to uncomment and customize it.
-  #  id: UUID! @default(expr: "uuidV4()")
+type Movie @table(name: "movies") {
+  id: String! @pk
   title: String!
-  imageUrl: String!
   genre: String
+  imageUrl: String
+  reviews: [Review] @relation(on: "movieId")
+  metadata: MovieMetadata @relation(on: "id")
 }
 
-# MovieMetadata is a metadata attached to a Movie.
-# Movie <-> MovieMetadata is a one-to-one relationship
-type MovieMetadata @table {
-  # @unique ensures each Movie can only one MovieMetadata.
-  movie: Movie! @unique
-  # The movie field adds the following foreign key field. Feel free to uncomment and customize it.
-  #  movieId: UUID!
-  rating: Float
+type MovieMetadata @table(name: "movie_metadata") {
+  id: String! @pk
   releaseYear: Int
   description: String
+  rating: Float
 }
 
-# Reviews is a join table between User and Movie.
-# It has a composite primary keys `userUid` and `movieId`.
-# A user can leave reviews for many movies. A movie can have reviews from many users.
-# User  <-> Review is a one-to-many relationship
-# Movie <-> Review is a one-to-many relationship
-# Movie <-> User is a many-to-many relationship
-type Review @table(name: "Reviews", key: ["movie", "user"]) {
-  user: User!
-  # The user field adds the following foreign key field. Feel free to uncomment and customize it.
-  #  userUid: String!
-  movie: Movie!
-  # The movie field adds the following foreign key field. Feel free to uncomment and customize it.
-  #  movieId: UUID!
-  rating: Int
+type Review @table(name: "reviews") {
+  userId: String! @pk
+  movieId: String! @pk
   reviewText: String
-  reviewDate: Date! @default(expr: "request.time")
+  rating: Int
+  reviewDate: Timestamp! @default(expression: "CURRENT_TIMESTAMP")
+  user: User! @relation(on: "userId")
+  movie: Movie! @relation(on: "movieId")
+}
+
+type User @table(name: "users") {
+  id: String! @pk @auth(claim: "uid")
+  username: String!
+  reviews: [Review] @relation(on: "userId")
 }

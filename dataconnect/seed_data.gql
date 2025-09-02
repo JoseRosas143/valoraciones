@@ -1,0 +1,25 @@
+mutation SeedDatabase @auth(level: USER) {
+  movie_insertMany(data: [
+    {
+      title: "Inception",
+      year: 2010,
+      runtimeMinutes: 148,
+      genres: ["action", "sci-fi", "thriller"],
+      summary: "A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a CEO."
+    },
+    {
+      title: "The Shawshank Redemption",
+      year: 1994,
+      runtimeMinutes: 142,
+      genres: ["drama"],
+      summary: "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency."
+    },
+    {
+      title: "Pulp Fiction",
+      year: 1994,
+      runtimeMinutes: 154,
+      genres: ["crime", "drama"],
+      summary: "The lives of two mob hitmen, a boxer, a gangster's wife, and a pair of diner bandits intertwine in four tales of violence and redemption."
+    }
+  ])
+}

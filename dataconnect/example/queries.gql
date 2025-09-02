@@ -1,78 +1,29 @@
-# Example queries for a simple movie app.
+mutation AddNewReview @auth(level: USER) {
+  review_insert(data: {userId_expr: "auth.uid", movieId: "550e8400-e29b-41d4-a716-446655440000", watchId: "550e8400-e29b-41d4-a716-446655440000", rating: 5, isPublic: true})
+}
 
-# @auth() directives control who can call each operation.
-# Anyone should be able to list all movies, so the auth level is set to PUBLIC
-query ListMovies @auth(level: PUBLIC, insecureReason: "Anyone can list all movies.") {
-  movies {
+query GetMyMovieLists @auth(level: USER) {
+  movieLists(where: {userId: {eq_expr: "auth.uid"}}) {
     id
-    title
-    imageUrl
-    genre
+    name
+    description
   }
 }
 
-# List all users, only admins should be able to list all users, so we use NO_ACCESS
-query ListUsers @auth(level: NO_ACCESS) {
-  users {
-    id
-    username
-  }
+mutation UpdateMovieList($movieListId: UUID!, $name: String, $description: String, $isPublic: Boolean) @auth(level: USER) {
+  movieList_update(
+    key: {id: $movieListId}
+    data: {name: $name, description: $description, isPublic: $isPublic}
+  )
 }
 
-# Logged in users can list all their reviews and movie titles associated with the review
-# Since the query uses the uid of the current authenticated user, we set auth level to USER
-query ListUserReviews @auth(level: USER) {
-  user(key: { id_expr: "auth.uid" }) {
+query ListPublicMovieLists @auth(level: PUBLIC) {
+  movieLists(where: {isPublic: {eq: true}}) {
     id
-    username
-    # <field>_on_<foreign_key_field> makes it easy to grab info from another table
-    # Here, we use it to grab all the reviews written by the user.
-    reviews: reviews_on_user {
-      rating
-      reviewDate
-      reviewText
-      movie {
-        id
-        title
-      }
+    name
+    description
+    user {
+      displayName
     }
-  }
-}
-
-# Get movie by id
-query GetMovieById($id: UUID!) @auth(level: PUBLIC, insecureReason: "Anyone can get a movie by id.") {
-  movie(id: $id) {
-    id
-    title
-    imageUrl
-    genre
-    metadata: movieMetadata_on_movie {
-      rating
-      releaseYear
-      description
-    }
-    reviews: reviews_on_movie {
-      reviewText
-      reviewDate
-      rating
-      user {
-        id
-        username
-      }
-    }
-  }
-}
-
-# Search for movies, actors, and reviews
-query SearchMovie($titleInput: String, $genre: String) @auth(level: PUBLIC, insecureReason: "Anyone can search for movies.") {
-  movies(
-    where: {
-      _and: [{ genre: { eq: $genre } }, { title: { contains: $titleInput } }]
-    }
-  ) {
-    id
-    title
-    genre
-    imageUrl
   }
 }
