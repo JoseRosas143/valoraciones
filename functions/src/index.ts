@@ -10,7 +10,7 @@
 import {setGlobalOptions} from "firebase-functions";
 
 // Set global options for functions if needed.
-setGlobalOptions({ maxInstances: 10 });
+setGlobalOptions({maxInstances: 10});
 
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
