@@ -175,11 +175,13 @@ export const defaultTemplate: MedicalForm = {
 };
 
 
-export const getInitialForm = (): MedicalForm => {
+export const getInitialForm = (template: MedicalForm = defaultTemplate): MedicalForm => {
     return {
-        ...defaultTemplate,
+        ...template,
         id: nanoid(),
         name: `Nuevo Formulario - ${new Date().toLocaleDateString()}`,
         isTemplate: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
     }
 }

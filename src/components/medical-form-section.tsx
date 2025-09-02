@@ -1,19 +1,19 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import type { MedicalSection } from '@/types/medical-form';
 import { transcribeMedicalInterview, TranscribeMedicalInterviewOutput } from '@/ai/flows/transcribe-medical-interview';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, Square, Loader2, Clipboard, Check, RotateCcw, BrainCircuit, Save, Trash2 } from 'lucide-react';
+import { Mic, Square, Loader2, Clipboard, Check, RotateCcw, BrainCircuit, Save, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import { Input } from './ui/input';
 
 interface MedicalFormSectionProps {
   section: MedicalSection;
   onContentChange: (id: string, newContent: string) => void;
-  onAllSectionsContentChange: (fullData: TranscribeMedicalInterviewOutput) => void;
+  onAllSectionsContentChange?: (fullData: TranscribeMedicalInterviewOutput) => void;
   onReset: (id: string) => void;
   onSummarize: (id: string) => void;
   isSummarizing: boolean;
@@ -21,6 +21,9 @@ interface MedicalFormSectionProps {
   onTitleChange?: (id: string, newTitle: string) => void;
   onDelete?: (id: string) => void;
   isEditable: boolean;
+  onMove?: (direction: 'up' | 'down') => void;
+  isFirst?: boolean;
+  isLast?: boolean;
 }
 
 export function MedicalFormSection({
@@ -34,6 +37,9 @@ export function MedicalFormSection({
   onTitleChange,
   onDelete,
   isEditable,
+  onMove,
+  isFirst,
+  isLast,
 }: MedicalFormSectionProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -65,7 +71,9 @@ export function MedicalFormSection({
           const base64Audio = reader.result as string;
           try {
             const result = await transcribeMedicalInterview({ audioDataUri: base64Audio });
-            onAllSectionsContentChange(result);
+            if (onAllSectionsContentChange) {
+              onAllSectionsContentChange(result);
+            }
             toast({
               title: 'Transcripción Completa',
               description: 'El formulario ha sido actualizado con la información del audio.',
@@ -128,57 +136,76 @@ export function MedicalFormSection({
 
   return (
     <AccordionItem value={section.id} className="bg-card border-none rounded-lg shadow-sm overflow-hidden">
-      <AccordionTrigger className="px-6 py-4 text-lg font-semibold hover:no-underline data-[state=open]:border-b">
-        <div className="flex items-center gap-2 w-full">
-            {isEditable && onTitleChange ? (
-              <Input
-                value={section.title}
-                onChange={(e) => onTitleChange(section.id, e.target.value)}
-                className="text-lg font-semibold"
-                onClick={(e) => e.stopPropagation()}
-              />
-            ) : (
-              <span className="flex-1 text-left">{section.title}</span>
-            )}
-        </div>
-      </AccordionTrigger>
+        <AccordionTrigger className="px-6 py-4 text-lg font-semibold hover:no-underline data-[state=open]:border-b">
+          <div className="flex items-center gap-2 w-full">
+              {isEditable && onTitleChange ? (
+                <Input
+                  value={section.title}
+                  onChange={(e) => onTitleChange(section.id, e.target.value)}
+                  className="text-lg font-semibold"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <span className="flex-1 text-left">{section.title}</span>
+              )}
+          </div>
+        </AccordionTrigger>
       <AccordionContent className="px-6 pb-6 pt-4">
         <div className="flex justify-end items-center mb-2">
-             <div className="flex items-center">
-                <Button variant="ghost" size="icon" onClick={onSave} className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                    <Save className="h-5 w-5" />
-                    <span className="sr-only">Guardar Formulario</span>
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => onReset(section.id)} className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                    <RotateCcw className="h-5 w-5" />
-                    <span className="sr-only">Reiniciar sección</span>
-                </Button>
-                {isEditable && onDelete && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onDelete(section.id)}
-                    className="h-8 w-8 text-red-500 hover:text-red-600"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                    <span className="sr-only">Eliminar sección</span>
+            <div className="flex items-center">
+              {!isEditable && (
+                  <Button variant="ghost" size="icon" onClick={onSave} className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                      <Save className="h-5 w-5" />
+                      <span className="sr-only">Guardar Formulario</span>
                   </Button>
-                )}
-            </div>
+              )}
+              {!isEditable && (
+                  <Button variant="ghost" size="icon" onClick={() => onReset(section.id)} className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                      <RotateCcw className="h-5 w-5" />
+                      <span className="sr-only">Reiniciar sección</span>
+                  </Button>
+              )}
+
+              {isEditable && onMove && (
+                <>
+                  <Button variant="ghost" size="icon" onClick={() => onMove('up')} disabled={isFirst} className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                    <ArrowUp className="h-5 w-5" />
+                    <span className="sr-only">Mover hacia arriba</span>
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => onMove('down')} disabled={isLast} className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                    <ArrowDown className="h-5 w-5" />
+                    <span className="sr-only">Mover hacia abajo</span>
+                  </Button>
+                </>
+              )}
+              {isEditable && onDelete && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onDelete(section.id)}
+                  className="h-8 w-8 text-red-500 hover:text-red-600"
+                >
+                  <Trash2 className="h-5 w-5" />
+                  <span className="sr-only">Eliminar sección</span>
+                </Button>
+              )}
+          </div>
         </div>
         <div className="space-y-4">
           <div className="flex items-start gap-4">
             <div className='flex flex-col gap-2'>
-              {!isEditable && (
+              {!isEditable && onAllSectionsContentChange && (
                 <Button onClick={handleToggleRecording} variant="outline" size="sm" disabled={isTranscribing || isSummarizing}>
                   {isRecording ? <Square className="mr-2 h-4 w-4 text-red-500 fill-current" /> : <Mic className="mr-2 h-4 w-4" />}
                   {isRecording ? 'Detener' : 'Grabar y Rellenar'}
                 </Button>
               )}
-              <Button onClick={() => onSummarize(section.id)} variant="outline" size="sm" disabled={isTranscribing || isSummarizing || !section.content}>
-                {isSummarizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
-                Resumir Sección
-              </Button>
+              {!isEditable && (
+                <Button onClick={() => onSummarize(section.id)} variant="outline" size="sm" disabled={isTranscribing || isSummarizing || !section.content}>
+                    {isSummarizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
+                    Resumir Sección
+                </Button>
+              )}
             </div>
             <div className="flex items-center gap-4 h-9">
               {isRecording && (
@@ -193,7 +220,7 @@ export function MedicalFormSection({
               {(isTranscribing || isSummarizing) && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="animate-spin h-4 w-4" />
-                  {isTranscribing ? 'Transcribiendo y rellenando...' : 'Resumiendo...'}
+                  {isTranscribing ? 'Transcribiendo...' : 'Resumiendo...'}
                 </div>
               )}
             </div>
@@ -202,10 +229,11 @@ export function MedicalFormSection({
             <Textarea
               value={section.content}
               onChange={(e) => onContentChange(section.id, e.target.value)}
-              placeholder={isEditable ? "Define el contenido de la plantilla para esta sección" : "Haga clic en 'Grabar' para transcribir o escriba aquí..."}
-              rows={12}
+              placeholder={isEditable ? "El contenido de esta sección se genera automáticamente." : "Haga clic en 'Grabar' para transcribir o escriba aquí..."}
+              rows={isEditable ? 3 : 12}
               className="pr-12 text-base"
-              disabled={isTranscribing || isSummarizing}
+              disabled={isTranscribing || isSummarizing || (isEditable && section.id !== '')}
+              readOnly={isEditable}
             />
             <Button onClick={handleCopy} variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 text-muted-foreground hover:text-foreground" disabled={!section.content}>
               <span className="sr-only">Copiar al portapapeles</span>

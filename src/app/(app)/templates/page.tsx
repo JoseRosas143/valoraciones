@@ -6,12 +6,12 @@ import { MedicalForm } from '@/types/medical-form';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FilePlus, Trash2 } from 'lucide-react';
+import { FilePlus, Trash2, Edit, PlusSquare } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { defaultTemplate } from '@/lib/forms-utils';
+import { defaultTemplate, getInitialForm } from '@/lib/forms-utils';
 
 export default function TemplatesPage() {
-  const [templates, setTemplates] = useLocalStorage<MedicalForm[]>('medicalForms', [defaultTemplate]);
+  const [forms, setForms] = useLocalStorage<MedicalForm[]>('medicalForms', [defaultTemplate]);
   const [isClient, setIsClient] = useState(false);
   const router = useRouter();
 
@@ -20,7 +20,16 @@ export default function TemplatesPage() {
   }, []);
 
   const createNewTemplate = () => {
-    router.push('/new-form');
+    router.push('/templates/new');
+  };
+  
+  const handleUseTemplate = (templateId: string) => {
+    const template = forms.find(t => t.id === templateId);
+    if (template) {
+        const newForm = getInitialForm(template);
+        setForms([...forms, newForm]);
+        router.push(`/forms/${newForm.id}`);
+    }
   };
 
   const deleteTemplate = (id: string) => {
@@ -28,7 +37,7 @@ export default function TemplatesPage() {
         alert('No se puede eliminar la plantilla predeterminada.');
         return;
     }
-    setTemplates(templates.filter(form => form.id !== id));
+    setForms(forms.filter(form => form.id !== id));
   };
   
   if (!isClient) {
@@ -40,19 +49,19 @@ export default function TemplatesPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-foreground">Plantillas de Formularios</h1>
         <Button onClick={createNewTemplate}>
-          <FilePlus className="mr-2 h-4 w-4" />
+          <PlusSquare className="mr-2 h-4 w-4" />
           Crear Nueva Plantilla
         </Button>
       </div>
-       {templates.filter(f => f.isTemplate).length > 0 ? (
+       {forms.filter(f => f.isTemplate).length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {templates.filter(f => f.isTemplate).map(template => (
+          {forms.filter(f => f.isTemplate).map(template => (
             <Card key={template.id}>
               <CardHeader>
                 <CardTitle className="flex justify-between items-center">
-                   <Link href={`/new-form?templateId=${template.id}`} className="hover:underline">
+                   <span className="hover:underline">
                     {template.name}
-                  </Link>
+                  </span>
                   {template.id !== 'default' && (
                     <Button variant="ghost" size="icon" onClick={() => deleteTemplate(template.id)}>
                       <Trash2 className="h-4 w-4 text-red-500" />
@@ -61,14 +70,21 @@ export default function TemplatesPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground mb-4">
                     {template.sections.length} secciones
                 </p>
-                 <Link href={`/new-form?templateId=${template.id}`} passHref>
-                    <Button variant="outline" className="mt-4 w-full">
-                        Editar
+                <div className="flex flex-col gap-2">
+                    <Button onClick={() => handleUseTemplate(template.id)}>
+                        <FilePlus className="mr-2 h-4 w-4" />
+                        Usar esta plantilla
                     </Button>
-                </Link>
+                    <Link href={`/templates/edit/${template.id}`} passHref>
+                        <Button variant="outline" className="w-full">
+                            <Edit className="mr-2 h-4 w-4" />
+                            Editar
+                        </Button>
+                    </Link>
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -77,7 +93,7 @@ export default function TemplatesPage() {
          <div className="text-center py-12">
           <p className="text-muted-foreground mb-4">No tienes plantillas personalizadas.</p>
           <Button onClick={createNewTemplate}>
-            <FilePlus className="mr-2 h-4 w-4" />
+            <PlusSquare className="mr-2 h-4 w-4" />
             Crea tu primera plantilla
           </Button>
         </div>
