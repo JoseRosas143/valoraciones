@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { MedicalForm } from '@/types/medical-form';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, deleteDoc, doc, query, where, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, addDoc, deleteDoc, doc, query, where, writeBatch, setDoc } from 'firebase/firestore';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,30 +24,19 @@ export default function TemplatesPage() {
   useEffect(() => {
     async function fetchTemplates() {
       if (!user) return;
+      setIsLoading(true);
       try {
         const templatesRef = collection(db, 'users', user.uid, 'forms');
         const q = query(templatesRef, where('isTemplate', '==', true));
         const querySnapshot = await getDocs(q);
-        let userTemplates = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MedicalForm));
+        const userTemplates = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MedicalForm));
 
-        // Check if default templates exist, if not, add them
-        const hasDefault = userTemplates.some(t => t.id === 'default');
-        const hasNote = userTemplates.some(t => t.id === 'note');
-        
-        if (!hasDefault || !hasNote) {
-            const batch = writeBatch(db);
-            if (!hasDefault) {
-                const defaultRef = doc(db, 'users', user.uid, 'forms', 'default');
-                batch.set(defaultRef, defaultTemplates);
-            }
-            if (!hasNote) {
-                const noteRef = doc(db, 'users', user.uid, 'forms', 'note');
-                batch.set(noteRef, noteTemplate);
-            }
-            await batch.commit();
-            // Re-fetch after adding
-            const updatedSnapshot = await getDocs(q);
-            userTemplates = updatedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MedicalForm));
+        // Add default templates to the list if they are not in the fetched data
+        if (!userTemplates.some(t => t.id === defaultTemplates.id)) {
+            userTemplates.unshift(defaultTemplates);
+        }
+        if (!userTemplates.some(t => t.id === noteTemplate.id)) {
+            userTemplates.push(noteTemplate);
         }
         
         setTemplates(userTemplates);
@@ -70,11 +59,17 @@ export default function TemplatesPage() {
   
   const handleUseTemplate = async (templateId: string) => {
     if (!user) return;
-    const template = templates.find(t => t.id === templateId);
+    let template = templates.find(t => t.id === templateId);
+
     if (template) {
         try {
+            // If the template is a default one, ensure it's saved to the user's templates first.
+            if (template.id === 'default' || template.id === 'note') {
+                const templateRef = doc(db, 'users', user.uid, 'forms', template.id);
+                await setDoc(templateRef, template, { merge: true });
+            }
+
             const initialForm = getInitialForm(template);
-            // Firestore generates the ID, so we don't save the 'id' field in the document.
             const { id, ...newFormData } = initialForm;
             const formsRef = collection(db, 'users', user.uid, 'forms');
             const docRef = await addDoc(formsRef, newFormData);
