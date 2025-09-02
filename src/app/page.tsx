@@ -3,14 +3,28 @@
 import { useState, useRef } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-
-import { Accordion } from '@/components/ui/accordion';
+import {
+    Accordion,
+} from '@/components/ui/accordion';
 import { Header } from '@/components/header';
 import { MedicalFormSection } from '@/components/medical-form-section';
 import { Button } from '@/components/ui/button';
 import { summarizeMedicalSection } from '@/ai/flows/summarize-medical-section';
 import { useToast } from '@/hooks/use-toast';
 import type { TranscribeMedicalInterviewOutput } from '@/ai/flows/transcribe-medical-interview';
+import { Pencil, Trash2, Save, X } from 'lucide-react';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+
 
 const initialSections: MedicalSection[] = [
     {
@@ -119,16 +133,19 @@ Medicamentos actuales: `,
     {
         id: 'padecimientoActual',
         title: 'Padecimiento Actual',
-        content: `Descripción del padecimiento: 
-Somatometría
-  Talla: 
-  Peso real: 
-  Tensión arterial: 
-  Frecuencia cardiaca: 
-  Frecuencia respiratoria: 
-  Temperatura: 
-  Saturación O2: 
-  Superficie corporal: `,
+        content: `Descripción del padecimiento: `,
+    },
+    {
+        id: 'somatometria',
+        title: 'Somatometría',
+        content: `Talla: 
+Peso real: 
+Tensión arterial: 
+Frecuencia cardiaca: 
+Frecuencia respiratoria: 
+Temperatura: 
+Saturación O2: 
+Superficie corporal: `,
     },
     {
         id: 'exploracionFisica',
@@ -186,6 +203,7 @@ export interface MedicalSection {
 
 // Helper to format a string from a nested object for display
 function formatContent(data: any, indent = ''): string {
+    if (!data) return '';
     return Object.entries(data)
         .map(([key, value]) => {
             const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
@@ -208,7 +226,13 @@ export default function Home() {
     const newSections = sections.map(section => {
       const sectionData = fullData[section.id as keyof TranscribeMedicalInterviewOutput];
       if (sectionData && typeof sectionData === 'object') {
-        return { ...section, content: formatContent(sectionData) };
+        const content = formatContent(sectionData);
+        // Special handling for padecimientoActual to include somatometria
+        if (section.id === 'padecimientoActual' && fullData.somatometria) {
+            const somatometriaContent = formatContent(fullData.somatometria);
+            return { ...section, content: `${content}\n\nSomatometría:\n${somatometriaContent}` };
+        }
+        return { ...section, content };
       }
       return section;
     });
@@ -353,3 +377,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

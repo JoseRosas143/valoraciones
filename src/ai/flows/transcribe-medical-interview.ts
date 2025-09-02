@@ -199,6 +199,8 @@ const transcribeMedicalInterviewPrompt = ai.definePrompt({
   output: {schema: TranscribeMedicalInterviewOutputSchema},
   prompt: `Eres un asistente médico experto en valoración preanestésica. Tu tarea es analizar una transcripción de audio de un interrogatorio médico entre un doctor y un paciente o familiar. Debes extraer la información clínica y completar las siguientes secciones con lenguaje médico preciso. Si algún campo no se menciona en la transcripción, déjalo vacío. La salida debe ser un objeto JSON estructurado.
 
+  Si en el audio se menciona la frase "agregar información extra", todo el texto que siga a esa frase debe ser transcrito y colocado en el campo "espacioLibre" de la sección "planComentariosAdicionales".
+
   Audio: {{media url=audioDataUri}}
   `,
 });
@@ -214,3 +216,5 @@ const transcribeMedicalInterviewFlow = ai.defineFlow(
     return output!;
   }
 );
+
+    
