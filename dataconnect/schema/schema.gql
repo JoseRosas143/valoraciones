@@ -1,29 +1,47 @@
 
-type Movie @table(name: "movies") {
-  id: String! @pk
-  title: String
+type Movie @table {
+  id: String! @primaryKey @default(expression: "gen_random_uuid()")
+  title: String!
   genre: String
   imageUrl: String
-  metadata: MovieMetadata @embedded
-  reviews: [Review]! @relation(through: "reviews", from: "movieId", to: "userId")
+  metadata: MovieMetadata @foreignKey(references: "id")
+  reviews: [Review] @relation(on: "movieId")
 }
 
-type MovieMetadata {
+type MovieMetadata @table {
+  id: String! @primaryKey @default(expression: "gen_random_uuid()")
   releaseYear: Int
   rating: Float
   description: String
 }
 
-type User @table(name: "users") {
-  id: String! @pk
+type User @table {
+  id: String! @primaryKey
   username: String
-  reviews: [Review]! @relation(through: "reviews", from: "userId", to: "movieId")
+  reviews: [Review] @relation(on: "userId")
 }
 
-type Review @table(name: "reviews") {
-  userId: String! @pk
-  movieId: String! @pk
+type Review @table {
+  userId: String! @primaryKey
+  movieId: String! @primaryKey
   reviewText: String
   rating: Int
-  reviewDate: Timestamp
+  reviewDate: Timestamp! @default(expression: "now()")
+  user: User! @foreignKey(references: "id")
+  movie: Movie! @foreignKey(references: "id")
+}
+
+type Query {
+  listMovies: [Movie]! @permission(public: true)
+  listUsers: [User]! @permission(public: true)
+  listUserReviews: User @permission(public: true) @auth
+  getMovieById(id: String!): Movie @permission(public: true)
+  searchMovie(titleInput: String, genre: String): [Movie]! @permission(public: true)
+}
+
+type Mutation {
+  createMovie(title: String!, genre: String, imageUrl: String): Movie! @permission(public: true)
+  upsertUser(username: String): User! @permission(public: true) @auth
+  addReview(movieId: String!, rating: Int!, reviewText: String!): Review! @permission(public: true) @auth
+  deleteReview(movieId: String!): Review! @permission(public: true) @auth
 }
