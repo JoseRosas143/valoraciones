@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { summarizeMedicalSection } from '@/ai/flows/summarize-medical-section';
 import { useToast } from '@/hooks/use-toast';
 import type { TranscribeMedicalInterviewOutput } from '@/ai/flows/transcribe-medical-interview';
-import { Pencil, Trash2, Save, X } from 'lucide-react';
+import { Pencil, Trash2, Save, X, PlusCircle, ArrowUp, ArrowDown } from 'lucide-react';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -204,7 +204,6 @@ export default function Home() {
   const [sections, setSections] = useState<MedicalSection[]>(initialSections);
   const [isLoadingPdf, setIsLoadingPdf] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState<string | null>(null);
-  const formRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const handleAllSectionsContentChange = (fullData: TranscribeMedicalInterviewOutput) => {
@@ -281,37 +280,48 @@ export default function Home() {
     URL.revokeObjectURL(url);
   };
 
-  const handleExportPdf = () => {
-    const input = formRef.current;
-    if (input) {
-      setIsLoadingPdf(true);
-      html2canvas(input, { scale: 2 }).then((canvas) => {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
-        const ratio = canvasWidth / pdfWidth;
-        const height = canvasHeight / ratio;
+  const handleExportPdf = async () => {
+    setIsLoadingPdf(true);
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const margin = 15;
+    let y = margin;
 
-        let position = 0;
-        let remainingHeight = height;
+    pdf.setFontSize(18);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Formulario Médico', pageWidth / 2, y, { align: 'center' });
+    y += 10;
 
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, height);
-        remainingHeight -= pdfHeight;
-
-        while (remainingHeight > 0) {
-          position -= pdfHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, height);
-          remainingHeight -= pdfHeight;
+    for (const section of sections) {
+        if (y > pageHeight - margin) {
+            pdf.addPage();
+            y = margin;
         }
 
-        pdf.save('formulario-medico.pdf');
-        setIsLoadingPdf(false);
-      }).catch(() => setIsLoadingPdf(false));
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        const titleLines = pdf.splitTextToSize(section.title, pageWidth - margin * 2);
+        pdf.text(titleLines, margin, y);
+        y += (titleLines.length * 5);
+
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        const contentLines = pdf.splitTextToSize(section.content, pageWidth - margin * 2);
+        
+        for (const line of contentLines) {
+            if (y > pageHeight - margin) {
+                pdf.addPage();
+                y = margin;
+            }
+            pdf.text(line, margin, y);
+            y += 5;
+        }
+        y += 5; // Extra space between sections
     }
+
+    pdf.save('formulario-medico.pdf');
+    setIsLoadingPdf(false);
   };
 
   const handleMoveSection = (index: number, direction: 'up' | 'down') => {
@@ -336,7 +346,7 @@ export default function Home() {
       />
       <main className="flex-1 p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
-          <div ref={formRef} className="bg-background rounded-lg p-2 md:p-4">
+          <div className="bg-background rounded-lg p-2 md:p-4">
             <h1 className="text-3xl font-bold mb-6 text-center font-headline text-foreground">
               Formulario Médico
             </h1>
