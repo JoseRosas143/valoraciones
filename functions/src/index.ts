@@ -1,3 +1,4 @@
+
 /**
  * Import function triggers from their respective submodules:
  *
@@ -28,7 +29,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
  */
 export const createStripeCheckout = https.onCall(
   {cors: true},
-  async (context) => {
+  async (request) => {
+    const context = request;
     // Check if the user is authenticated.
     if (!context.auth) {
       throw new HttpsError(
@@ -46,12 +48,8 @@ export const createStripeCheckout = https.onCall(
         "User email is not available."
       );
     }
-
-    // IMPORTANT: Replace this with your actual Price ID from your Stripe Dashboard
-    const priceId = "YOUR_STRIPE_PRICE_ID";
-    if (priceId === "YOUR_STRIPE_PRICE_ID") {
-        throw new HttpsError("invalid-argument", "Stripe Price ID is not configured.");
-    }
+    
+    const priceId = request.data.priceId || "price_1S2sicKQEealPn90L3nZW4Ep";
 
     try {
       // Create a checkout session

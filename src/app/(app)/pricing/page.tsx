@@ -18,7 +18,7 @@ declare global {
 export default function PricingPage() {
     const { user } = useAuth();
     const pricingTableId = 'prctbl_1S2twhKQEealPn90TRqSUhkM'; 
-    const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    const publishableKey = "pk_live_51S2rUEKQEealPn90ZBYa7u4hvO0YkSRWLmqUq3paCcE98h4w61KoYO20Y5xO2sAITk9BxMgRchgF2FYmcLdjB9Bb00Cho3oB6s";
 
     useEffect(() => {
         const pricingTable = document.querySelector('stripe-pricing-table');
