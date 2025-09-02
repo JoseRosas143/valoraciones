@@ -7,7 +7,7 @@ import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, Square, Loader2, Clipboard, Check, RotateCcw, BrainCircuit, Save, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { Mic, Square, Loader2, Clipboard, Check, RotateCcw, BrainCircuit, Save, Trash2, ArrowUp, ArrowDown, FileQuestion } from 'lucide-react';
 import { Input } from './ui/input';
 
 interface MedicalFormSectionProps {
@@ -16,7 +16,9 @@ interface MedicalFormSectionProps {
   onAllSectionsContentChange?: (fullData: TranscribeMedicalInterviewOutput) => void;
   onReset: (id: string) => void;
   onSummarize: (id: string) => void;
+  onSuggestDiagnosis: (id: string) => void;
   isSummarizing: boolean;
+  isDiagnosing: boolean;
   onSave: () => void;
   isSaving?: boolean;
   onTitleChange?: (id: string, newTitle: string) => void;
@@ -25,6 +27,7 @@ interface MedicalFormSectionProps {
   onMove?: (direction: 'up' | 'down') => void;
   isFirst?: boolean;
   isLast?: boolean;
+  isNote?: boolean;
 }
 
 export function MedicalFormSection({
@@ -33,7 +36,9 @@ export function MedicalFormSection({
   onAllSectionsContentChange,
   onReset,
   onSummarize,
+  onSuggestDiagnosis,
   isSummarizing,
+  isDiagnosing,
   onSave,
   isSaving,
   onTitleChange,
@@ -42,6 +47,7 @@ export function MedicalFormSection({
   onMove,
   isFirst,
   isLast,
+  isNote = false,
 }: MedicalFormSectionProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -197,15 +203,21 @@ export function MedicalFormSection({
           <div className="flex items-start gap-4">
             <div className='flex flex-col gap-2'>
               {!isEditable && onAllSectionsContentChange && (
-                <Button onClick={handleToggleRecording} variant="outline" size="sm" disabled={isTranscribing || isSummarizing}>
+                <Button onClick={handleToggleRecording} variant="outline" size="sm" disabled={isTranscribing || isSummarizing || isDiagnosing}>
                   {isRecording ? <Square className="mr-2 h-4 w-4 text-red-500 fill-current" /> : <Mic className="mr-2 h-4 w-4" />}
                   {isRecording ? 'Detener' : 'Grabar y Rellenar'}
                 </Button>
               )}
               {!isEditable && (
-                <Button onClick={() => onSummarize(section.id)} variant="outline" size="sm" disabled={isTranscribing || isSummarizing || !section.content}>
+                <Button onClick={() => onSummarize(section.id)} variant="outline" size="sm" disabled={isTranscribing || isSummarizing || isDiagnosing || !section.content}>
                     {isSummarizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
-                    Resumir Sección
+                    {isNote ? 'Resumen Clínico' : 'Resumir Sección'}
+                </Button>
+              )}
+               {isNote && !isEditable && (
+                <Button onClick={() => onSuggestDiagnosis(section.id)} variant="outline" size="sm" disabled={isTranscribing || isSummarizing || isDiagnosing || !section.content}>
+                    {isDiagnosing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileQuestion className="mr-2 h-4 w-4" />}
+                    Posible Diagnóstico
                 </Button>
               )}
             </div>
@@ -219,10 +231,10 @@ export function MedicalFormSection({
                   Grabando...
                 </div>
               )}
-              {(isTranscribing || isSummarizing) && (
+              {(isTranscribing || isSummarizing || isDiagnosing) && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="animate-spin h-4 w-4" />
-                  {isTranscribing ? 'Transcribiendo...' : 'Resumiendo...'}
+                  {isTranscribing ? 'Transcribiendo...' : (isSummarizing ? 'Resumiendo...' : 'Analizando...')}
                 </div>
               )}
             </div>
@@ -234,7 +246,7 @@ export function MedicalFormSection({
               placeholder={isEditable ? "El contenido de esta sección se genera automáticamente." : "Haga clic en 'Grabar' para transcribir o escriba aquí..."}
               rows={isEditable ? 3 : 12}
               className="pr-12 text-base"
-              disabled={isTranscribing || isSummarizing || (isEditable && section.id !== '')}
+              disabled={isTranscribing || isSummarizing || isDiagnosing || (isEditable && section.id !== '')}
               readOnly={isEditable}
             />
             <Button onClick={handleCopy} variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 text-muted-foreground hover:text-foreground" disabled={!section.content}>

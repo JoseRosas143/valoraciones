@@ -7,10 +7,11 @@ import { Accordion } from '@/components/ui/accordion';
 import { Header } from '@/components/header';
 import { MedicalFormSection } from '@/components/medical-form-section';
 import { summarizeMedicalSection } from '@/ai/flows/summarize-medical-section';
+import { suggestDiagnosis } from '@/ai/flows/suggest-diagnosis';
 import { useToast } from '@/hooks/use-toast';
 import type { TranscribeMedicalInterviewOutput } from '@/ai/flows/transcribe-medical-interview';
 import { MedicalForm } from '@/types/medical-form';
-import { defaultTemplate, getInitialForm } from '@/lib/forms-utils';
+import { noteTemplate, getInitialForm } from '@/lib/forms-utils';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/use-auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -44,12 +45,15 @@ export default function FormPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingPdf, setIsLoadingPdf] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState<string | null>(null);
+  const [isDiagnosing, setIsDiagnosing] = useState<string | null>(null);
   
   const { toast } = useToast();
   const router = useRouter();
   const params = useParams();
   const formId = params.id as string;
   const { user } = useAuth();
+  
+  const isNoteTemplate = currentForm?.templateId === noteTemplate.id;
 
   const fetchForm = useCallback(async () => {
     if (!user || !formId) return;
@@ -118,16 +122,34 @@ export default function FormPage() {
 
   const handleAllSectionsContentChange = (fullData: TranscribeMedicalInterviewOutput) => {
     if (!currentForm) return;
-    const newSections = currentForm.sections.map(section => {
-      const sectionData = fullData[section.id as keyof TranscribeMedicalInterviewOutput];
-       if (sectionData) {
-        const content = formatContent(sectionData);
-        return { ...section, content };
-      }
-      return section;
-    });
-    const updatedForm = { ...currentForm, sections: newSections, updatedAt: new Date().toISOString() };
-    updateCurrentForm(updatedForm, true); // Save after a full update
+    
+    let updatedContent = '';
+    // If it's a note template, just dump all the transcribed text into the first section
+    if(isNoteTemplate && currentForm.sections.length > 0) {
+        const fullText = Object.values(fullData).map(sectionData => {
+            if (typeof sectionData === 'object' && sectionData !== null) {
+                return Object.values(sectionData).join(' ');
+            }
+            return sectionData;
+        }).join('\n');
+        
+        const newSections = [...currentForm.sections];
+        newSections[0] = { ...newSections[0], content: fullText };
+        const updatedForm = { ...currentForm, sections: newSections, updatedAt: new Date().toISOString() };
+        updateCurrentForm(updatedForm, true);
+    } else {
+        // Handle multi-section forms as before
+        const newSections = currentForm.sections.map(section => {
+          const sectionData = fullData[section.id as keyof TranscribeMedicalInterviewOutput];
+           if (sectionData) {
+            const content = formatContent(sectionData);
+            return { ...section, content };
+          }
+          return section;
+        });
+        const updatedForm = { ...currentForm, sections: newSections, updatedAt: new Date().toISOString() };
+        updateCurrentForm(updatedForm, true);
+    }
   };
 
   const handleSectionContentChange = (id: string, newContent: string) => {
@@ -139,11 +161,11 @@ export default function FormPage() {
   };
 
   const handleResetSection = (id: string) => {
-    if (!currentForm) return;
+    if (!currentForm || !currentForm.templateId) return;
     
+    const template = [noteTemplate, ...getInitialForm().sections].find(t => t.id === currentForm?.templateId);
     // Find the original template to reset from
-    const template = defaultTemplate; // Assuming a single default for now. Could be enhanced.
-    const originalSection = template.sections.find(section => section.id === id);
+    const originalSection = template?.sections.find(section => section.id === id);
 
     if (originalSection) {
         handleSectionContentChange(id, originalSection.content);
@@ -171,6 +193,28 @@ export default function FormPage() {
         });
       } finally {
         setIsSummarizing(null);
+      }
+    }
+  };
+  
+  const handleSuggestDiagnosis = async (id: string) => {
+    if (!currentForm) return;
+    const section = currentForm.sections.find(s => s.id === id);
+    if (section && section.content) {
+      setIsDiagnosing(id);
+      try {
+        const result = await suggestDiagnosis({ consultationText: section.content });
+        const newContent = `${section.content}\n\n--- Posible Diagnóstico (IA) ---\n${result.diagnosis}`;
+        handleSectionContentChange(id, newContent);
+      } catch (error) {
+        console.error('Diagnosis suggestion failed:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error al Sugerir Diagnóstico',
+          description: 'No se pudo generar una sugerencia. Por favor, inténtelo de nuevo.',
+        });
+      } finally {
+        setIsDiagnosing(null);
       }
     }
   };
@@ -277,10 +321,13 @@ export default function FormPage() {
                   onAllSectionsContentChange={handleAllSectionsContentChange}
                   onReset={handleResetSection}
                   onSummarize={handleSummarizeSection}
+                  onSuggestDiagnosis={handleSuggestDiagnosis}
                   isSummarizing={isSummarizing === section.id}
+                  isDiagnosing={isDiagnosing === section.id}
                   onSave={handleSaveForm}
                   isSaving={isSaving}
                   isEditable={false}
+                  isNote={isNoteTemplate}
                 />
               ))}
             </Accordion>

@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { MedicalForm } from '@/types/medical-form';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
+import { collection, getDocs, addDoc, deleteDoc, doc, query, where, writeBatch } from 'firebase/firestore';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FilePlus, Trash2, Edit, PlusSquare, Loader2 } from 'lucide-react';
-import { getInitialForm } from '@/lib/forms-utils';
+import { getInitialForm, defaultTemplates, noteTemplate } from '@/lib/forms-utils';
 import { useToast } from '@/hooks/use-toast';
 
 export default function TemplatesPage() {
@@ -27,7 +27,28 @@ export default function TemplatesPage() {
         const templatesRef = collection(db, 'users', user.uid, 'forms');
         const q = query(templatesRef, where('isTemplate', '==', true));
         const querySnapshot = await getDocs(q);
-        const userTemplates = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MedicalForm));
+        let userTemplates = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MedicalForm));
+
+        // Check if default templates exist, if not, add them
+        const hasDefault = userTemplates.some(t => t.id === 'default');
+        const hasNote = userTemplates.some(t => t.id === 'note');
+        
+        if (!hasDefault || !hasNote) {
+            const batch = writeBatch(db);
+            if (!hasDefault) {
+                const defaultRef = doc(db, 'users', user.uid, 'forms', 'default');
+                batch.set(defaultRef, defaultTemplates);
+            }
+            if (!hasNote) {
+                const noteRef = doc(db, 'users', user.uid, 'forms', 'note');
+                batch.set(noteRef, noteTemplate);
+            }
+            await batch.commit();
+            // Re-fetch after adding
+            const updatedSnapshot = await getDocs(q);
+            userTemplates = updatedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MedicalForm));
+        }
+        
         setTemplates(userTemplates);
       } catch (error) {
         console.error("Error fetching templates: ", error);
@@ -67,11 +88,11 @@ export default function TemplatesPage() {
 
   const deleteTemplate = async (id: string) => {
      if (!user) return;
-    if (id === 'default') {
+    if (id === 'default' || id === 'note') {
         toast({
             variant: 'destructive',
             title: 'Acción no permitida',
-            description: 'No se puede eliminar la plantilla predeterminada.',
+            description: 'No se pueden eliminar las plantillas predeterminadas.',
         });
         return;
     }
@@ -107,7 +128,7 @@ export default function TemplatesPage() {
                    <span className="hover:underline">
                     {template.name}
                   </span>
-                  {template.id !== 'default' && (
+                  {(template.id !== 'default' && template.id !== 'note') && (
                     <Button variant="ghost" size="icon" onClick={() => deleteTemplate(template.id)}>
                       <Trash2 className="h-4 w-4 text-red-500" />
                     </Button>

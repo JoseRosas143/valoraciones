@@ -167,15 +167,28 @@ Sangrado Permisible: `,
     }
 ];
 
-export const defaultTemplate: MedicalForm = {
+export const defaultTemplates: MedicalForm = {
     id: 'default',
-    name: 'Interrogatorio Médico Detallado',
+    name: 'Valoración Preanestésica',
     sections: initialSections,
     isTemplate: true,
 };
 
+export const noteTemplate: MedicalForm = {
+    id: 'note',
+    name: 'Nota de Consulta',
+    sections: [
+        {
+            id: 'consulta',
+            title: 'Consulta',
+            content: '',
+        }
+    ],
+    isTemplate: true,
+}
 
-export const getInitialForm = (template: MedicalForm = defaultTemplate): MedicalForm => {
+
+export const getInitialForm = (template: MedicalForm = defaultTemplates): MedicalForm => {
     return {
         ...template,
         id: nanoid(),
@@ -183,5 +196,6 @@ export const getInitialForm = (template: MedicalForm = defaultTemplate): Medical
         isTemplate: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        templateId: template.id,
     }
 }
