@@ -4,14 +4,12 @@ import { getAnalytics } from "firebase/analytics";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCicNixJ3zN9u7sqJhzS0vW10SA2lpNZps",
-  authDomain: "registro-animal-mx.firebaseapp.com",
-  databaseURL: "https://registro-animal-mx-default-rtdb.firebaseio.com",
-  projectId: "registro-animal-mx",
-  storageBucket: "registro-animal-mx.appspot.com",
-  messagingSenderId: "520878195963",
-  appId: "1:520878195963:web:b795bc0efb665b7a9b1c5e",
-  measurementId: "G-5NGXPZJWM7"
+  apiKey: "AIzaSyC8LiFq-T9h22G4D1ZuH-qS3g_6f6cqB1k",
+  authDomain: "mediscribe-assist-k6tzk.firebaseapp.com",
+  projectId: "mediscribe-assist-k6tzk",
+  storageBucket: "mediscribe-assist-k6tzk.appspot.com",
+  messagingSenderId: "105330976065",
+  appId: "1:105330976065:web:774540bdf8b83ab31dadc0"
 };
 
 
