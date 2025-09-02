@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,7 +9,7 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, query, where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { FilePlus, PlusSquare, Loader2 } from 'lucide-react';
+import { FilePlus, PlusSquare, Loader2, Gem } from 'lucide-react';
 import { getInitialForm } from '@/lib/forms-utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -108,7 +109,8 @@ export default function NewFormPage() {
             <p className="text-yellow-700">
                 Has utilizado todos tus formularios gratuitos. Para crear más, por favor, considera actualizar tu plan.
             </p>
-             <Button className="mt-4 bg-yellow-600 hover:bg-yellow-700 text-white">
+             <Button className="mt-4 bg-yellow-600 hover:bg-yellow-700 text-white" onClick={() => router.push('/pricing')}>
+                <Gem className="mr-2 h-4 w-4" />
                 Ver Planes de Suscripción
             </Button>
           </CardContent>

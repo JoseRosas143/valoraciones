@@ -13,7 +13,7 @@ import {
   SidebarFooter,
   SidebarInset,
 } from '@/components/ui/sidebar';
-import { FileText, FilePlus, LayoutTemplate, LogOut } from 'lucide-react';
+import { FileText, FilePlus, LayoutTemplate, LogOut, Gem } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth, AuthProvider } from '@/hooks/use-auth';
@@ -120,6 +120,17 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
                 <Link href="/new-form">
                   <FilePlus />
                   Crear Nuevo Formulario
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+               <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith('/pricing')}
+              >
+                <Link href="/pricing">
+                  <Gem />
+                  Suscripción
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
