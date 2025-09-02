@@ -1,51 +1,44 @@
 
-mutation CreateMovie($title: String!, $genre: String!, $imageUrl: String!) {
-    insertIntoMovies(
-        values: {
-            id: "uuid.v4()",
-            title: $title,
-            genre: $genre,
-            imageUrl: $imageUrl
-        }
-    ) {
-        id
-    }
+# Create a new movie
+mutation CreateMovie($title: String!, $year: Int, $genres: [String], $imageUrl: String) {
+  movie_insert(
+    data: { id: { auto: "" }, title: $title, year: $year, genres: $genres, imageUrl: $imageUrl }
+  ) {
+    id
+  }
 }
 
-mutation UpsertUser($username: String!) {
-    upsertIntoUsers(
-        values: {
-            id: "auth.uid()",
-            username: $username
-        }
-    ) {
-        id
-    }
+# Create or update a user
+mutation UpsertUser($id: String!, $username: String!) {
+  user_upsert(
+    data: { id: $id, username: $username }
+  ){
+    id
+  }
 }
 
-mutation AddReview($movieId: String!, $rating: Int!, $reviewText: String!) {
-    upsertIntoReviews(
-        values: {
-            userId: "auth.uid()",
-            movieId: $movieId,
-            rating: $rating,
-            reviewText: $reviewText,
-            reviewDate: "now()"
-        }
-    ) {
-       userId
-       movieId
+# Add or update a review for a movie
+mutation AddReview($movieId: String!, $userId: String!, $rating: Int, $reviewText: String) {
+  review_upsert(
+    data: {
+      movieId: $movieId
+      userId: $userId
+      rating: $rating
+      reviewText: $reviewText
+      reviewDate: { auto: "" }
     }
+  ) {
+    movieId
+    userId
+  }
 }
 
-mutation DeleteReview($movieId: String!) {
-    deleteFromReviews(
-        filter: {
-            userId: { eq: "auth.uid()" },
-            movieId: { eq: $movieId }
-        }
-    ) {
-        userId
-        movieId
-    }
+# Delete a review
+mutation DeleteReview($movieId: String!, $userId: String!) {
+  review_delete(
+    filter: { _and: [{ movieId: { eq: $movieId } }, { userId: { eq: $userId } }] }
+  ) {
+    movieId
+    userId
+  }
 }

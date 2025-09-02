@@ -1,24 +1,23 @@
 
 type Movie @table(name: "movies") {
-    id: String! @pk
-    title: String!
-    genre: String
-    imageUrl: String
-    reviews: [Review] @foreignKey(from: "id", to: "movieId")
+  id: String! @pk
+  title: String!
+  year: Int
+  genres: [String]
+  imageUrl: String
+  reviews: [Review] @relation(on: "movieId")
 }
 
 type User @table(name: "users") {
-    id: String! @pk
-    username: String
-    reviews: [Review] @foreignKey(from: "id", to: "userId")
+  id: String! @pk
+  username: String!
+  reviews: [Review] @relation(on: "userId")
 }
 
 type Review @table(name: "reviews") {
-    userId: String!
-    movieId: String!
-    reviewText: String
-    rating: Int
-    reviewDate: Timestamp
-    movie: Movie @foreignKey(from: "movieId", to: "id")
-    user: User @foreignKey(from: "userId", to: "id")
+  movieId: String! @pk
+  userId: String! @pk
+  rating: Int
+  reviewText: String
+  reviewDate: Timestamp
 }
