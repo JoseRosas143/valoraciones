@@ -7,7 +7,7 @@ import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, Square, Loader2, Clipboard, Check, RotateCcw, BrainCircuit, Save } from 'lucide-react';
+import { Mic, Square, Loader2, Clipboard, Check, RotateCcw, BrainCircuit, Save, Trash2 } from 'lucide-react';
 import { Input } from './ui/input';
 
 interface MedicalFormSectionProps {
@@ -217,6 +217,3 @@ export function MedicalFormSection({
     </AccordionItem>
   );
 }
-
-// Add Trash2 to imports
-import { Mic, Square, Loader2, Clipboard, Check, RotateCcw, BrainCircuit, Save, Trash2 } from 'lucide-react';
