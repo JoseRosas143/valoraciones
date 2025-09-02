@@ -10,7 +10,7 @@ import { summarizeMedicalSection } from '@/ai/flows/summarize-medical-section';
 import { suggestDiagnosis } from '@/ai/flows/suggest-diagnosis';
 import { useToast } from '@/hooks/use-toast';
 import type { TranscribeMedicalInterviewOutput } from '@/ai/flows/transcribe-medical-interview';
-import { MedicalForm } from '@/types/medical-form';
+import { MedicalForm, MedicalSection } from '@/types/medical-form';
 import { noteTemplate, getInitialForm } from '@/lib/forms-utils';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/use-auth';
@@ -19,21 +19,25 @@ import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
 
 // Helper to format a string from a nested object for display
-function formatContent(data: any, indent = ''): string {
+function formatContent(data: any): string {
     if (!data) return '';
     if (typeof data !== 'object') {
-        return `${indent}${data}`;
+        return String(data);
     }
     return Object.entries(data)
         .map(([key, value]) => {
+             // Do not include the key if it's a general transcription object
+            if (key === 'transcripcion' && typeof value === 'string') {
+                return value;
+            }
             const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
             if (value && typeof value === 'object' && !Array.isArray(value)) {
-                return `${indent}${formattedKey}:\n${formatContent(value, `${indent}  `)}`;
+                return `${formattedKey}:\n${formatContent(value)}`;
             }
             if (value) {
-                return `${indent}${formattedKey}: ${value}`;
+                return `${formattedKey}: ${value}`;
             }
-            return `${indent}${formattedKey}: `;
+            return `${formattedKey}: `;
 
         })
         .join('\n');
@@ -90,12 +94,11 @@ export default function FormPage() {
     }
   }, [user, formId, fetchForm]);
 
-  const saveForm = useCallback(async (formToSave: MedicalForm | null) => {
+  const saveForm = useCallback(async (formToSave: MedicalForm) => {
     if (!user || !formToSave) return;
     setIsSaving(true);
     try {
       const formRef = doc(db, 'users', user.uid, 'forms', formToSave.id);
-      // Remove id from object to avoid saving it in the document fields
       const { id, ...formData } = formToSave;
       await setDoc(formRef, formData, { merge: true });
        toast({
@@ -122,35 +125,22 @@ export default function FormPage() {
 
   const handleAllSectionsContentChange = (fullData: TranscribeMedicalInterviewOutput) => {
     if (!currentForm) return;
-    
-    let updatedContent = '';
-    // If it's a note template, just dump all the transcribed text into the first section
-    if(isNoteTemplate && currentForm.sections.length > 0) {
-        const fullText = Object.values(fullData).map(sectionData => {
-            if (typeof sectionData === 'object' && sectionData !== null) {
-                return Object.values(sectionData).join(' ');
-            }
-            return sectionData;
-        }).join('\n');
-        
-        const newSections = [...currentForm.sections];
-        newSections[0] = { ...newSections[0], content: fullText };
-        const updatedForm = { ...currentForm, sections: newSections, updatedAt: new Date().toISOString() };
-        updateAndSaveForm(updatedForm);
-    } else {
-        // Handle multi-section forms as before
-        const newSections = currentForm.sections.map(section => {
-          const sectionData = fullData[section.id as keyof TranscribeMedicalInterviewOutput];
-           if (sectionData) {
-            const content = formatContent(sectionData);
-            return { ...section, content };
-          }
-          return section;
-        });
-        const updatedForm = { ...currentForm, sections: newSections, updatedAt: new Date().toISOString() };
-        updateAndSaveForm(updatedForm);
-    }
-  };
+
+    const newSections = currentForm.sections.map(section => {
+      // The key for the data can be the section's ID.
+      const sectionData = fullData[section.id as keyof TranscribeMedicalInterviewOutput];
+      if (sectionData) {
+        // Format the content from the structured object received from the AI
+        const content = formatContent(sectionData);
+        return { ...section, content };
+      }
+      return section;
+    });
+
+    const updatedForm = { ...currentForm, sections: newSections, updatedAt: new Date().toISOString() };
+    updateAndSaveForm(updatedForm);
+};
+
 
   const handleSectionContentChange = (id: string, newContent: string) => {
     if (!currentForm) return;
@@ -160,20 +150,34 @@ export default function FormPage() {
     // Don't save on every keystroke, only update state
     setCurrentForm({ ...currentForm, sections: newSections });
   };
+  
+  const handleSectionSummaryChange = (id: string, newSummary: string) => {
+    if (!currentForm) return;
+    const newSections = currentForm.sections.map(section =>
+      section.id === id ? { ...section, summary: newSummary } : section
+    );
+    updateAndSaveForm({ ...currentForm, sections: newSections });
+  };
 
   const handleResetSection = (id: string) => {
     if (!currentForm || !currentForm.templateId) return;
     
-    const template = [noteTemplate, ...getInitialForm().sections].find(t => t.id === currentForm?.templateId);
-    // Find the original template to reset from
-    const originalSection = template?.sections.find(section => section.id === id);
+    // Combine default and note templates for lookup
+    const allTemplates = [defaultTemplates, noteTemplate];
+    const baseTemplate = allTemplates.find(t => t.id === currentForm?.templateId);
 
-    if (originalSection) {
-        handleSectionContentChange(id, originalSection.content);
-        toast({
-            title: 'Sección Reiniciada',
-            description: `El contenido de "${originalSection.title}" ha sido restaurado.`,
-        });
+    if (baseTemplate) {
+        const originalSection = baseTemplate.sections.find(section => section.id === id);
+        if (originalSection) {
+            const newSections = currentForm.sections.map(section =>
+                section.id === id ? { ...section, content: originalSection.content, summary: '' } : section
+            );
+            updateAndSaveForm({ ...currentForm, sections: newSections });
+            toast({
+                title: 'Sección Reiniciada',
+                description: `El contenido de "${originalSection.title}" ha sido restaurado.`,
+            });
+        }
     }
   };
 
@@ -184,7 +188,7 @@ export default function FormPage() {
       setIsSummarizing(id);
       try {
         const result = await summarizeMedicalSection({ sectionText: section.content });
-        handleSectionContentChange(id, result.summary);
+        handleSectionSummaryChange(id, result.summary);
       } catch (error) {
         console.error('Summarization failed:', error);
         toast({
@@ -205,8 +209,8 @@ export default function FormPage() {
       setIsDiagnosing(id);
       try {
         const result = await suggestDiagnosis({ consultationText: section.content });
-        const newContent = `${section.content}\n\n--- Posible Diagnóstico (IA) ---\n${result.diagnosis}`;
-        handleSectionContentChange(id, newContent);
+        const newSummary = `--- Posible Diagnóstico (IA) ---\n${result.diagnosis}`;
+        handleSectionSummaryChange(id, newSummary);
       } catch (error) {
         console.error('Diagnosis suggestion failed:', error);
         toast({
@@ -229,7 +233,7 @@ export default function FormPage() {
     if (!currentForm) return;
     const header = `<h1 style="font-family: Arial, sans-serif; font-size: 24px; font-weight: bold;">${currentForm.name}</h1>`;
     const content = currentForm.sections.map(section => 
-        `<h2 style="font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; margin-top: 20px;">${section.title}</h2><p style="font-family: Arial, sans-serif; font-size: 14px; white-space: pre-wrap;">${section.content}</p>`
+        `<h2 style="font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; margin-top: 20px;">${section.title}</h2><p style="font-family: Arial, sans-serif; font-size: 14px; white-space: pre-wrap;">${section.content}</p>${section.summary ? `<div style="background-color: #f0f0f0; border-left: 4px solid #ccc; padding: 10px; margin-top: 10px; white-space: pre-wrap;">${section.summary}</div>` : ''}`
     ).join('');
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="font-family: Arial, sans-serif;">${header}${content}</body></html>`;
     
@@ -286,6 +290,21 @@ export default function FormPage() {
             pdf.text(line, margin, y);
             y += 5;
         }
+
+        if(section.summary) {
+            y += 5;
+            pdf.setFillColor(240, 240, 240);
+            const summaryLines = pdf.splitTextToSize(section.summary, pageWidth - margin * 2 - 4);
+            const summaryHeight = summaryLines.length * 5 + 4;
+            if (y + summaryHeight > pageHeight - margin) {
+                pdf.addPage();
+                y = margin;
+            }
+            pdf.rect(margin, y - 2, pageWidth - margin * 2, summaryHeight, 'F');
+            pdf.text(summaryLines, margin + 2, y + 2);
+            y += summaryHeight;
+
+        }
         y += 5; // Extra space between sections
     }
 
@@ -310,10 +329,10 @@ export default function FormPage() {
             <Input 
                 value={currentForm.name}
                 onChange={(e) => setCurrentForm({ ...currentForm, name: e.target.value })}
-                onBlur={handleSaveForm} // Save when user clicks away from the input
+                onBlur={handleSaveForm}
                 className="text-3xl font-bold mb-6 text-center font-headline text-foreground"
             />
-            <Accordion type="single" collapsible className="w-full space-y-4">
+            <Accordion type="single" collapsible className="w-full space-y-4" defaultValue={currentForm.sections[0]?.id}>
               {currentForm.sections.map((section) => (
                 <MedicalFormSection
                   key={section.id}

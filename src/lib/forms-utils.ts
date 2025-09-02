@@ -182,6 +182,7 @@ export const noteTemplate: MedicalForm = {
             id: 'consulta',
             title: 'Consulta',
             content: '',
+            aiPrompt: 'Realizar una transcripción lo más fiel posible de la interacción durante la consulta. Enfocarse en capturar el diálogo y los detalles médicos relevantes de manera textual.',
         }
     ],
     isTemplate: true,
@@ -189,6 +190,15 @@ export const noteTemplate: MedicalForm = {
 
 
 export const getInitialForm = (template: MedicalForm = defaultTemplates): MedicalForm => {
+    // Make sure to create new IDs for sections when creating a form from a template
+    const newSections = template.sections.map(section => ({
+        ...section,
+        id: section.id, // Keep original ID for mapping, but a real ID will be given by nanoid in the component
+        content: section.content || '',
+        summary: '',
+        aiPrompt: section.aiPrompt || '',
+    }));
+
     return {
         ...template,
         id: nanoid(),
@@ -197,5 +207,6 @@ export const getInitialForm = (template: MedicalForm = defaultTemplates): Medica
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         templateId: template.id,
+        sections: newSections,
     }
 }

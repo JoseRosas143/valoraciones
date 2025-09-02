@@ -2,6 +2,8 @@ export interface MedicalSection {
   id: string;
   title: string;
   content: string;
+  summary?: string; // To store the AI-generated summary
+  aiPrompt?: string; // To store custom instructions for the AI for this section
 }
 
 export interface MedicalForm {

@@ -44,6 +44,14 @@ export default function NewTemplatePage() {
         updateCurrentForm({ ...currentForm, sections: newSections });
     };
 
+    const handleAiPromptChange = (id: string, newPrompt: string) => {
+        if (!currentForm) return;
+        const newSections = currentForm.sections.map(section =>
+            section.id === id ? { ...section, aiPrompt: newPrompt } : section
+        );
+        updateCurrentForm({ ...currentForm, sections: newSections });
+    }
+
     const handleDeleteSection = (id: string) => {
         if (!currentForm) return;
         const newSections = currentForm.sections.filter(section => section.id !== id);
@@ -56,6 +64,7 @@ export default function NewTemplatePage() {
             id: nanoid(),
             title: 'Nueva Sección',
             content: '',
+            aiPrompt: '',
         };
         updateCurrentForm({ ...currentForm, sections: [...currentForm.sections, newSection] });
     };
@@ -120,19 +129,22 @@ export default function NewTemplatePage() {
                             className="text-3xl font-bold mb-6 text-center"
                             placeholder="Nombre de la Plantilla"
                         />
-                        <Accordion type="single" collapsible className="w-full space-y-4">
+                        <Accordion type="single" collapsible className="w-full space-y-4" defaultValue={currentForm.sections[0]?.id}>
                             {currentForm.sections.map((section, index) => (
                                 <MedicalFormSection
                                     key={section.id}
                                     section={section}
                                     onContentChange={() => {}} // Content is not editable in template editor
                                     isSummarizing={false}
+                                    isDiagnosing={false}
                                     onSave={() => {}} // Not used in template editor
                                     isEditable={true}
                                     onTitleChange={handleTitleChange}
+                                    onAiPromptChange={handleAiPromptChange}
                                     onDelete={handleDeleteSection}
                                     onReset={() => {}}
                                     onSummarize={() => {}}
+                                    onSuggestDiagnosis={() => {}}
                                     onMove={direction => handleMoveSection(index, direction)}
                                     isFirst={index === 0}
                                     isLast={index === currentForm.sections.length - 1}

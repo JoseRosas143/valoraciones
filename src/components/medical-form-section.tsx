@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { MedicalSection } from '@/types/medical-form';
-import { transcribeMedicalInterview, TranscribeMedicalInterviewOutput } from '@/ai/flows/transcribe-medical-interview';
+import { transcribeMedicalInterview, TranscribeMedicalInterviewOutput, TranscribeMedicalInterviewInput } from '@/ai/flows/transcribe-medical-interview';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Mic, Square, Loader2, Clipboard, Check, RotateCcw, BrainCircuit, Save, Trash2, ArrowUp, ArrowDown, FileQuestion } from 'lucide-react';
 import { Input } from './ui/input';
+import { Label } from './ui/label';
 
 interface MedicalFormSectionProps {
   section: MedicalSection;
@@ -22,12 +23,14 @@ interface MedicalFormSectionProps {
   onSave: () => void;
   isSaving?: boolean;
   onTitleChange?: (id: string, newTitle: string) => void;
+  onAiPromptChange?: (id: string, newPrompt: string) => void;
   onDelete?: (id: string) => void;
   isEditable: boolean;
   onMove?: (direction: 'up' | 'down') => void;
   isFirst?: boolean;
   isLast?: boolean;
   isNote?: boolean;
+  allSections?: MedicalSection[]; // Pass all sections for transcription context
 }
 
 export function MedicalFormSection({
@@ -42,12 +45,14 @@ export function MedicalFormSection({
   onSave,
   isSaving,
   onTitleChange,
+  onAiPromptChange,
   onDelete,
   isEditable,
   onMove,
   isFirst,
   isLast,
   isNote = false,
+  allSections = [],
 }: MedicalFormSectionProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -78,7 +83,15 @@ export function MedicalFormSection({
         reader.onloadend = async () => {
           const base64Audio = reader.result as string;
           try {
-            const result = await transcribeMedicalInterview({ audioDataUri: base64Audio });
+            const transcriptionInput: TranscribeMedicalInterviewInput = {
+              audioDataUri: base64Audio,
+              sections: allSections.map(s => ({
+                id: s.id,
+                title: s.title,
+                aiPrompt: s.aiPrompt,
+              })),
+            };
+            const result = await transcribeMedicalInterview(transcriptionInput);
             if (onAllSectionsContentChange) {
               onAllSectionsContentChange(result);
             }
@@ -239,21 +252,46 @@ export function MedicalFormSection({
               )}
             </div>
           </div>
+
+          {isEditable && onAiPromptChange && (
+            <div className="space-y-2">
+              <Label htmlFor={`ai-prompt-${section.id}`}>Indicaciones para la IA (Opcional)</Label>
+              <Textarea
+                id={`ai-prompt-${section.id}`}
+                placeholder="Ej: Transcripción literal, enfocarse solo en datos médicos, etc."
+                value={section.aiPrompt}
+                onChange={(e) => onAiPromptChange(section.id, e.target.value)}
+                rows={2}
+                className="text-sm"
+              />
+            </div>
+          )}
+
           <div className="relative">
             <Textarea
               value={section.content}
               onChange={(e) => onContentChange(section.id, e.target.value)}
-              placeholder={isEditable ? "El contenido de esta sección se genera automáticamente." : "Haga clic en 'Grabar' para transcribir o escriba aquí..."}
+              placeholder={isEditable ? "El contenido de esta sección se genera automáticamente al usar la plantilla." : "Haga clic en 'Grabar' para transcribir o escriba aquí..."}
               rows={isEditable ? 3 : 12}
               className="pr-12 text-base"
-              disabled={isTranscribing || isSummarizing || isDiagnosing || (isEditable && section.id !== '')}
+              disabled={isTranscribing || isSummarizing || isDiagnosing}
               readOnly={isEditable}
             />
-            <Button onClick={handleCopy} variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 text-muted-foreground hover:text-foreground" disabled={!section.content}>
-              <span className="sr-only">Copiar al portapapeles</span>
-              {isCopied ? <Check className="h-5 w-5 text-green-600" /> : <Clipboard className="h-5 w-5" />}
-            </Button>
+            {!isEditable && (
+                <Button onClick={handleCopy} variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 text-muted-foreground hover:text-foreground" disabled={!section.content}>
+                <span className="sr-only">Copiar al portapapeles</span>
+                {isCopied ? <Check className="h-5 w-5 text-green-600" /> : <Clipboard className="h-5 w-5" />}
+                </Button>
+            )}
           </div>
+          {section.summary && (
+            <div className="mt-4 space-y-2">
+                <Label>Resumen / Diagnóstico (IA)</Label>
+                <div className="p-3 rounded-md border bg-muted/50 text-sm text-muted-foreground whitespace-pre-wrap">
+                    {section.summary}
+                </div>
+            </div>
+          )}
         </div>
       </AccordionContent>
     </AccordionItem>

@@ -11,12 +11,19 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
+const SectionInstructionSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  aiPrompt: z.string().optional().describe('Custom instruction for how to handle this section.'),
+});
+
 const TranscribeMedicalInterviewInputSchema = z.object({
   audioDataUri: z
     .string()
     .describe(
       "The audio recording of the medical interview, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
+  sections: z.array(SectionInstructionSchema).optional().describe('Instructions for each section to be filled.'),
 });
 export type TranscribeMedicalInterviewInput = z.infer<
   typeof TranscribeMedicalInterviewInputSchema
@@ -97,7 +104,7 @@ const AntecedentesPersonalesNoPatologicosSchema = z.object({
   alimentacion: z.string().optional(),
   inmunizaciones: z.string().optional(),
   cuidadorPrincipal: z.string().optional(),
-  hemotipo: z.string().optional(),
+  hemotipo: zstring().optional(),
   escolaridad: z.string().optional(),
 });
 const AntecedentesPersonalesPatologicosSchema = z.object({
@@ -139,7 +146,7 @@ const ExploracionFisicaSchema = z.object({
   abdomen: z.string().optional(),
   genitales: z.string().optional(),
   extremidades: z.string().optional(),
-  columnaVertebral: z.string().optional(),
+columnaVertebral: z.string().optional(),
   accesosVasculares: z.string().optional(),
 });
 const LaboratoriosEstudiosSchema = z.object({
@@ -178,6 +185,10 @@ const ComentarioBibliograficoSchema = z.object({
   comentarioBibliografico: z.string().optional(),
 });
 
+const ConsultaSchema = z.object({
+    transcripcion: z.string().optional(),
+});
+
 
 const TranscribeMedicalInterviewOutputSchema = z.object({
   hospitalInfo: HospitalInfoSchema.optional().describe('Información del hospital y servicio.'),
@@ -195,6 +206,7 @@ const TranscribeMedicalInterviewOutputSchema = z.object({
   planAnestesico: PlanAnestesicoSchema.optional().describe('Plan anestésico detallado.'),
   indicacionesAnestesicas: IndicacionesAnestesicasSchema.optional().describe('Indicaciones anestésicas específicas.'),
   comentarioBibliografico: ComentarioBibliograficoSchema.optional().describe('Comentarios bibliográficos relevantes.'),
+  consulta: ConsultaSchema.optional().describe('Transcripción de una consulta general.'),
 });
 
 export type TranscribeMedicalInterviewOutput = z.infer<
@@ -211,12 +223,24 @@ const transcribeMedicalInterviewPrompt = ai.definePrompt({
   name: 'transcribeMedicalInterviewPrompt',
   input: {schema: TranscribeMedicalInterviewInputSchema},
   output: {schema: TranscribeMedicalInterviewOutputSchema},
-  prompt: `Eres un asistente médico experto en valoración preanestésica. Tu tarea es analizar una transcripción de audio de un interrogatorio médico entre un doctor y un paciente o familiar. Debes extraer la información clínica y completar las siguientes secciones con lenguaje médico preciso. Si algún campo no se menciona en la transcripción, déjalo vacío. La salida debe ser un objeto JSON estructurado.
+  prompt: `Eres un asistente médico experto en valoración preanestésica y transcripción de dictado. Tu tarea principal es analizar un audio de un interrogatorio médico y extraer la información clínica para rellenar una estructura JSON.
 
-  Si en el audio se menciona la frase "agregar información extra", todo el texto que siga a esa frase debe ser transcrito y colocado en el campo "espacioLibre" de la sección "planComentariosAdicionales".
+Instrucciones Generales:
+1.  **Dictado Inteligente**: Tu función es transcribir la conversación. Presta especial atención a la información relevante para cada sección del formulario según su título.
+2.  **Flexibilidad**: Si bien debes enfocarte en lo médico, transcribe también información contextual que pueda ser relevante, incluso si no parece estrictamente clínica. El objetivo es una transcripción fiel pero organizada.
+3.  **No Inventar**: Si un campo o sección no se menciona en el audio, déjalo vacío. No inventes información.
+4.  **Instrucciones Específicas de Sección**: El usuario puede proveer instrucciones específicas para cada sección. ¡Síguelas al pie de la letra! Por ejemplo, si una sección pide "transcripción exacta", transcribe todo textualmente para esa sección. Si pide "solo datos médicos", filtra la conversación.
+5.  **Frase Clave "agregar información extra"**: Si en el audio se menciona esta frase, todo el texto que siga debe ser transcrito y colocado en el campo "espacioLibre" de la sección "planComentariosAdicionales".
 
-  Audio: {{media url=audioDataUri}}
-  `,
+Audio para transcribir: {{media url=audioDataUri}}
+
+Secciones a completar (sigue las instrucciones de 'aiPrompt' si se proporcionan):
+{{#each sections}}
+- Sección ID: {{id}}
+- Título: {{title}}
+- Instrucción (aiPrompt): {{#if aiPrompt}}{{aiPrompt}}{{else}}Extraer información relevante del audio correspondiente a este título.{{/if}}
+{{/each}}
+`,
 });
 
 const transcribeMedicalInterviewFlow = ai.defineFlow(
@@ -230,5 +254,3 @@ const transcribeMedicalInterviewFlow = ai.defineFlow(
     return output!;
   }
 );
-
-    
