@@ -8,8 +8,60 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Stethoscope } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+
+
+// Custom BonicaScribe Logo Component
+const BonicaScribeLogo = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 100 100"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M85.34,64.21A40,40,0,1,1,95,50"
+      stroke="currentColor"
+      strokeWidth="4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M50,75V35"
+      stroke="currentColor"
+      strokeWidth="4"
+      strokeLinecap="round"
+    />
+    <path
+      d="M58,51s-4-3-4-6,4-6,4-6"
+      stroke="currentColor"
+      strokeWidth="4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M42,63s4,3,4,6-4,6-4,6"
+      stroke="currentColor"
+      strokeWidth="4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+     <path
+      d="M46,45a10.5,10.5,0,1,0,0,18"
+      stroke="currentColor"
+      strokeWidth="4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M54,71.5a10.5,10.5,0,1,0,0-18"
+      stroke="currentColor"
+      strokeWidth="4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -51,8 +103,8 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center p-4 login-page-bg">
       <Card className="w-full max-w-sm bg-card/80 backdrop-blur-sm">
         <CardHeader className="text-center">
-          <Stethoscope className="mx-auto h-12 w-12 text-primary" />
-          <CardTitle className="mt-4 text-2xl font-bold">MediScribe Assist</CardTitle>
+          <BonicaScribeLogo className="mx-auto h-12 w-12 text-primary" />
+          <CardTitle className="mt-4 text-2xl font-bold">BonicaScribe Assist</CardTitle>
           <CardDescription>
             {isSigningUp ? 'Crea una cuenta para empezar' : 'Inicia sesión para continuar'}
           </CardDescription>

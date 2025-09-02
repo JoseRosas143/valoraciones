@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/hooks/use-auth';
 
 export const metadata: Metadata = {
-  title: 'MediScribe Assist',
+  title: 'BonicaScribe Assist',
   description: 'AI-powered medical transcription assistant',
 };
 
