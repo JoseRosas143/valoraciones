@@ -329,8 +329,7 @@ export function MedicalFormSection({
               placeholder={isEditable ? "El contenido de esta sección se genera automáticamente al usar la plantilla." : "Haga clic en 'Grabar' para transcribir o escriba aquí..."}
               rows={isEditable ? 3 : 12}
               className="pr-12 text-base"
-              readOnly={isEditable}
-              disabled={isTranscribing || isSummarizing || isDiagnosing}
+              disabled={isEditable || isTranscribing || isSummarizing || isDiagnosing}
             />
             {!isEditable && (
                 <Button onClick={handleCopy} variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 text-muted-foreground hover:text-foreground" disabled={!section.content}>
@@ -352,3 +351,5 @@ export function MedicalFormSection({
     </AccordionItem>
   );
 }
+
+    
