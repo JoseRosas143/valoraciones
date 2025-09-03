@@ -136,17 +136,17 @@ export default function FormPage() {
       setFullTranscription(fullData.originalTranscription);
     }
     
+    // Create a new sections array with updated content
     const updatedSections = currentForm.sections.map(section => {
       const newSectionData = fullData[section.id as keyof TranscribeMedicalInterviewOutput];
-      if (newSectionData) {
-        const newContent = formatContent(newSectionData);
-        // Only update if there is new content to avoid overwriting existing data with empty strings
-        if (newContent) {
-          return { ...section, content: newContent };
-        }
+      const newContent = newSectionData ? formatContent(newSectionData) : '';
+      
+      // Update content only if there is new content from the transcription for that section
+      if (newContent) {
+        return { ...section, content: newContent };
       }
-      // Return the original section if no new data is available for it
-      return section;
+      
+      return section; // Return original section if no new data
     });
 
     const updatedForm = { 
