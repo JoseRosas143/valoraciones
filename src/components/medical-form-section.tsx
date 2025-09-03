@@ -351,5 +351,3 @@ export function MedicalFormSection({
     </AccordionItem>
   );
 }
-
-    
