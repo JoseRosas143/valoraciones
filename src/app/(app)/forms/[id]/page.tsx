@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -128,7 +129,7 @@ export default function FormPage() {
     saveForm(updatedForm);
   }, [saveForm]);
   
- const handleAllSectionsContentChange = useCallback((fullData: TranscribeMedicalInterviewOutput) => {
+  const handleAllSectionsContentChange = (fullData: TranscribeMedicalInterviewOutput) => {
     if (!currentForm) return;
 
     if (fullData.originalTranscription) {
@@ -151,7 +152,7 @@ export default function FormPage() {
         const updatedForm = { ...currentForm, sections: newSections, updatedAt: new Date().toISOString() };
         updateAndSaveForm(updatedForm);
     }
-}, [currentForm, updateAndSaveForm]);
+  };
 
 
   const handleSectionContentChange = (id: string, newContent: string) => {
