@@ -185,15 +185,11 @@ export function MedicalFormSection({
     <AccordionItem value={section.id} className="bg-card border-none rounded-lg shadow-sm overflow-hidden">
         <AccordionTrigger className="px-6 py-4 text-lg font-semibold hover:no-underline data-[state=open]:border-b">
           <div className="flex items-center gap-2 w-full">
-              {isEditable && onTitleChange ? (
-                 <span className="flex-1 text-left">{section.title}</span>
-              ) : (
                 <span className="flex-1 text-left">{section.title}</span>
-              )}
           </div>
         </AccordionTrigger>
       <AccordionContent className="px-6 pb-6 pt-4">
-        {isEditable && onTitleChange && (
+        {isEditable && onTitleChange ? (
             <div className="mb-4">
                 <Label htmlFor={`title-input-${section.id}`}>Título de la Sección</Label>
                 <Input
@@ -203,7 +199,7 @@ export function MedicalFormSection({
                     className="text-lg font-semibold"
                 />
             </div>
-        )}
+        ) : null}
         <div className="flex justify-end items-center mb-2">
             <div className="flex items-center">
               {!isEditable && (
