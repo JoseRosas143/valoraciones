@@ -136,30 +136,26 @@ export default function FormPage() {
       setFullTranscription(fullData.originalTranscription);
     }
     
-    // Create a mutable copy of the form to update
-    const updatedForm = { ...currentForm };
-    let hasChanged = false;
-
-    // Iterate over the keys in the data returned from the AI
-    for (const key in fullData) {
-        if (key === 'originalTranscription') continue;
-
-        const sectionIndex = updatedForm.sections.findIndex(section => section.id === key);
-
-        if (sectionIndex !== -1) {
-            const sectionData = fullData[key as keyof TranscribeMedicalInterviewOutput];
-            const newContent = formatContent(sectionData);
-
-            if (newContent && updatedForm.sections[sectionIndex].content !== newContent) {
-                updatedForm.sections[sectionIndex] = { ...updatedForm.sections[sectionIndex], content: newContent };
-                hasChanged = true;
-            }
+    const updatedSections = currentForm.sections.map(section => {
+      const newSectionData = fullData[section.id as keyof TranscribeMedicalInterviewOutput];
+      if (newSectionData) {
+        const newContent = formatContent(newSectionData);
+        // Only update if there is new content to avoid overwriting existing data with empty strings
+        if (newContent) {
+          return { ...section, content: newContent };
         }
-    }
+      }
+      // Return the original section if no new data is available for it
+      return section;
+    });
 
-    if (hasChanged) {
-        updateAndSaveForm({ ...updatedForm, updatedAt: new Date().toISOString() });
-    }
+    const updatedForm = { 
+        ...currentForm, 
+        sections: updatedSections,
+        updatedAt: new Date().toISOString() 
+    };
+
+    updateAndSaveForm(updatedForm);
   };
 
 
@@ -183,7 +179,6 @@ export default function FormPage() {
   const handleResetSection = (id: string) => {
     if (!currentForm || !currentForm.templateId) return;
     
-    // Check both default templates
     const allTemplates = [defaultTemplates, noteTemplate];
     const baseTemplate = allTemplates.find(t => t.id === currentForm?.templateId);
 
