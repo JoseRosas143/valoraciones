@@ -186,18 +186,24 @@ export function MedicalFormSection({
         <AccordionTrigger className="px-6 py-4 text-lg font-semibold hover:no-underline data-[state=open]:border-b">
           <div className="flex items-center gap-2 w-full">
               {isEditable && onTitleChange ? (
-                <Input
-                  value={section.title}
-                  onChange={(e) => onTitleChange(section.id, e.target.value)}
-                  className="text-lg font-semibold"
-                  onClick={(e) => e.stopPropagation()}
-                />
+                 <span className="flex-1 text-left">{section.title}</span>
               ) : (
                 <span className="flex-1 text-left">{section.title}</span>
               )}
           </div>
         </AccordionTrigger>
       <AccordionContent className="px-6 pb-6 pt-4">
+        {isEditable && onTitleChange && (
+            <div className="mb-4">
+                <Label htmlFor={`title-input-${section.id}`}>Título de la Sección</Label>
+                <Input
+                    id={`title-input-${section.id}`}
+                    value={section.title}
+                    onChange={(e) => onTitleChange(section.id, e.target.value)}
+                    className="text-lg font-semibold"
+                />
+            </div>
+        )}
         <div className="flex justify-end items-center mb-2">
             <div className="flex items-center">
               {!isEditable && (
@@ -327,6 +333,7 @@ export function MedicalFormSection({
               placeholder={isEditable ? "El contenido de esta sección se genera automáticamente al usar la plantilla." : "Haga clic en 'Grabar' para transcribir o escriba aquí..."}
               rows={isEditable ? 3 : 12}
               className="pr-12 text-base"
+              readOnly={isEditable}
               disabled={isTranscribing || isSummarizing || isDiagnosing}
             />
             {!isEditable && (
@@ -349,5 +356,3 @@ export function MedicalFormSection({
     </AccordionItem>
   );
 }
-
-    

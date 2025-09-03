@@ -132,25 +132,37 @@ export default function FormPage() {
   const handleAllSectionsContentChange = (fullData: TranscribeMedicalInterviewOutput) => {
     if (!currentForm) return;
 
+    // First, update the full transcription state if it exists
     if (fullData.originalTranscription) {
-        setFullTranscription(fullData.originalTranscription);
+      setFullTranscription(fullData.originalTranscription);
     }
-
+  
+    // Create a mutable copy of the sections to update
+    let updatedSections = [...currentForm.sections];
     let hasChanged = false;
-    const newSections = currentForm.sections.map(section => {
-      const sectionData = fullData[section.id as keyof TranscribeMedicalInterviewOutput];
-      const newContent = formatContent(sectionData);
-
-      if (newContent && section.content !== newContent) {
-        hasChanged = true;
-        return { ...section, content: newContent };
+  
+    // Iterate over the keys in the data returned from the AI
+    for (const key in fullData) {
+      if (key === 'originalTranscription') continue; // Skip this key
+  
+      // Find the index of the section that matches the key
+      const sectionIndex = updatedSections.findIndex(section => section.id === key);
+  
+      if (sectionIndex !== -1) {
+        const sectionData = fullData[key as keyof TranscribeMedicalInterviewOutput];
+        const newContent = formatContent(sectionData);
+  
+        // Only update if the content has actually changed
+        if (newContent && updatedSections[sectionIndex].content !== newContent) {
+          updatedSections[sectionIndex] = { ...updatedSections[sectionIndex], content: newContent };
+          hasChanged = true;
+        }
       }
-      return section;
-    });
-
+    }
+  
     if (hasChanged) {
-        const updatedForm = { ...currentForm, sections: newSections, updatedAt: new Date().toISOString() };
-        updateAndSaveForm(updatedForm);
+      const updatedForm = { ...currentForm, sections: updatedSections, updatedAt: new Date().toISOString() };
+      updateAndSaveForm(updatedForm); // This saves the entire updated form
     }
   };
 
@@ -175,6 +187,7 @@ export default function FormPage() {
   const handleResetSection = (id: string) => {
     if (!currentForm || !currentForm.templateId) return;
     
+    // Check both default templates
     const allTemplates = [defaultTemplates, noteTemplate];
     const baseTemplate = allTemplates.find(t => t.id === currentForm?.templateId);
 
@@ -191,7 +204,7 @@ export default function FormPage() {
             });
         }
     }
-  };
+};
 
   const handleSummarizeSection = async (id: string) => {
     if (!currentForm) return;
@@ -372,5 +385,3 @@ export default function FormPage() {
     </div>
   );
 }
-
-    
