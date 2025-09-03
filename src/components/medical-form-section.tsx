@@ -4,7 +4,8 @@
 import { useState, useRef, useEffect } from 'react';
 import type { MedicalSection } from '@/types/medical-form';
 import { transcribeMedicalInterview, TranscribeMedicalInterviewOutput, TranscribeMedicalInterviewInput } from '@/ai/flows/transcribe-medical-interview';
-import { transcribeDynamicForm, TranscribeDynamicFormInput, TranscribeDynamicFormOutput } from '@/ai/flows/transcribe-dynamic-form';
+import { transcribeDynamicForm } from '@/ai/flows/transcribe-dynamic-form';
+import type { TranscribeDynamicFormInput, TranscribeDynamicFormOutput } from '@/types/dynamic-form';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
