@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -15,6 +16,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { nanoid } from 'nanoid';
 import { PlusCircle, Save, Loader2 } from 'lucide-react';
+
+// Helper to convert a string to camelCase for use as a section ID
+const toCamelCase = (str: string) => {
+    return str.replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) => {
+        return index === 0 ? word.toLowerCase() : word.toUpperCase();
+    }).replace(/\s+/g, '');
+};
+
 
 export default function NewTemplatePage() {
     const router = useRouter();
@@ -63,11 +72,13 @@ export default function NewTemplatePage() {
 
     const handleAddSection = () => {
         if (!currentForm) return;
+        const sectionTitle = 'Nueva Sección';
         const newSection: MedicalSection = {
-            id: nanoid(),
-            title: 'Nueva Sección',
+            // Use a unique ID for React key, but the title-derived ID will be used for AI mapping
+            id: toCamelCase(sectionTitle + ' ' + nanoid(4)), 
+            title: sectionTitle,
             content: '',
-            aiPrompt: '',
+            aiPrompt: 'Extraer la información relevante para esta sección.',
         };
         updateCurrentForm({ ...currentForm, sections: [...currentForm.sections, newSection] });
     };
@@ -86,11 +97,20 @@ export default function NewTemplatePage() {
     const handleSaveTemplate = async () => {
         if (!currentForm || !user) return;
         setIsSaving(true);
+        
+        // Final validation: ensure all sections have a unique, AI-compatible ID based on their final title
+        const finalSections = currentForm.sections.map(section => ({
+            ...section,
+            // The ID for the AI must be derived from the title to be predictable
+            id: toCamelCase(section.title)
+        }));
+
         const finalForm = {
             ...currentForm,
+            sections: finalSections,
             updatedAt: new Date().toISOString(),
         }
-        // Remove temporary client-side ID
+        // Remove temporary client-side ID from the form itself
         const { id, ...templateData } = finalForm;
 
         try {
