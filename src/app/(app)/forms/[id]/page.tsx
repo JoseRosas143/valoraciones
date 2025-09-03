@@ -124,45 +124,41 @@ export default function FormPage() {
   }, [user, toast]);
 
 
-  const updateAndSaveForm = useCallback((updatedForm: MedicalForm) => {
+  const updateAndSaveForm = (updatedForm: MedicalForm) => {
     setCurrentForm(updatedForm);
     saveForm(updatedForm);
-  }, [saveForm]);
+  };
   
   const handleAllSectionsContentChange = (fullData: TranscribeMedicalInterviewOutput) => {
     if (!currentForm) return;
 
-    // First, update the full transcription state if it exists
     if (fullData.originalTranscription) {
       setFullTranscription(fullData.originalTranscription);
     }
-  
-    // Create a mutable copy of the sections to update
-    let updatedSections = [...currentForm.sections];
+    
+    // Create a mutable copy of the form to update
+    const updatedForm = { ...currentForm };
     let hasChanged = false;
-  
+
     // Iterate over the keys in the data returned from the AI
     for (const key in fullData) {
-      if (key === 'originalTranscription') continue; // Skip this key
-  
-      // Find the index of the section that matches the key
-      const sectionIndex = updatedSections.findIndex(section => section.id === key);
-  
-      if (sectionIndex !== -1) {
-        const sectionData = fullData[key as keyof TranscribeMedicalInterviewOutput];
-        const newContent = formatContent(sectionData);
-  
-        // Only update if the content has actually changed
-        if (newContent && updatedSections[sectionIndex].content !== newContent) {
-          updatedSections[sectionIndex] = { ...updatedSections[sectionIndex], content: newContent };
-          hasChanged = true;
+        if (key === 'originalTranscription') continue;
+
+        const sectionIndex = updatedForm.sections.findIndex(section => section.id === key);
+
+        if (sectionIndex !== -1) {
+            const sectionData = fullData[key as keyof TranscribeMedicalInterviewOutput];
+            const newContent = formatContent(sectionData);
+
+            if (newContent && updatedForm.sections[sectionIndex].content !== newContent) {
+                updatedForm.sections[sectionIndex] = { ...updatedForm.sections[sectionIndex], content: newContent };
+                hasChanged = true;
+            }
         }
-      }
     }
-  
+
     if (hasChanged) {
-      const updatedForm = { ...currentForm, sections: updatedSections, updatedAt: new Date().toISOString() };
-      updateAndSaveForm(updatedForm); // This saves the entire updated form
+        updateAndSaveForm({ ...updatedForm, updatedAt: new Date().toISOString() });
     }
   };
 
@@ -385,3 +381,5 @@ export default function FormPage() {
     </div>
   );
 }
+
+    
