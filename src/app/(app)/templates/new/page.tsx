@@ -19,9 +19,15 @@ import { PlusCircle, Save, Loader2 } from 'lucide-react';
 
 // Helper to convert a string to camelCase for use as a section ID
 const toCamelCase = (str: string) => {
-    return str.replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) => {
-        return index === 0 ? word.toLowerCase() : word.toUpperCase();
-    }).replace(/\s+/g, '');
+    // Remove special characters, accents, and spaces, then convert to camelCase
+    return str
+        .normalize('NFD') // Normalize to separate accents from letters
+        .replace(/[\u0300-\u036f]/g, '') // Remove accent characters
+        .replace(/[^\w\s]/gi, '') // Remove non-alphanumeric characters (except spaces)
+        .replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) => {
+            return index === 0 ? word.toLowerCase() : word.toUpperCase();
+        })
+        .replace(/\s+/g, '');
 };
 
 
@@ -75,7 +81,7 @@ export default function NewTemplatePage() {
         const sectionTitle = 'Nueva Sección';
         const newSection: MedicalSection = {
             // Use a unique ID for React key, but the title-derived ID will be used for AI mapping
-            id: toCamelCase(sectionTitle + ' ' + nanoid(4)), 
+            id: nanoid(), 
             title: sectionTitle,
             content: '',
             aiPrompt: 'Extraer la información relevante para esta sección.',
@@ -102,7 +108,7 @@ export default function NewTemplatePage() {
         const finalSections = currentForm.sections.map(section => ({
             ...section,
             // The ID for the AI must be derived from the title to be predictable
-            id: toCamelCase(section.title)
+            id: toCamelCase(section.title) || nanoid(), // Fallback to nanoid if title is empty
         }));
 
         const finalForm = {

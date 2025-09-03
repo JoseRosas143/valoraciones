@@ -11,6 +11,7 @@ import { summarizeMedicalSection } from '@/ai/flows/summarize-medical-section';
 import { suggestDiagnosis } from '@/ai/flows/suggest-diagnosis';
 import { useToast } from '@/hooks/use-toast';
 import type { TranscribeMedicalInterviewOutput } from '@/ai/flows/transcribe-medical-interview';
+import type { TranscribeDynamicFormOutput } from '@/ai/flows/transcribe-dynamic-form';
 import { MedicalForm, MedicalSection } from '@/types/medical-form';
 import { defaultTemplates, noteTemplate } from '@/lib/forms-utils';
 import { Input } from '@/components/ui/input';
@@ -64,6 +65,7 @@ export default function FormPage() {
   const { user } = useAuth();
   
   const isNoteTemplate = currentForm?.templateId === noteTemplate.id;
+  const isCustomTemplate = currentForm?.templateId !== defaultTemplates.id && currentForm?.templateId !== noteTemplate.id;
 
   const fetchForm = useCallback(async () => {
     if (!user || !formId) return;
@@ -129,24 +131,20 @@ export default function FormPage() {
     saveForm(updatedForm);
   };
   
-  const handleAllSectionsContentChange = (fullData: TranscribeMedicalInterviewOutput) => {
+  const handleAllSectionsContentChange = (fullData: TranscribeMedicalInterviewOutput | TranscribeDynamicFormOutput) => {
     if (!currentForm) return;
 
-    if (fullData.originalTranscription) {
-      setFullTranscription(fullData.originalTranscription);
+    // The 'originalTranscription' field only exists on the hardcoded medical schema.
+    if ('originalTranscription' in fullData && fullData.originalTranscription) {
+        setFullTranscription(fullData.originalTranscription);
     }
-    
-    // Create a new sections array with updated content
+
     const updatedSections = currentForm.sections.map(section => {
-      const newSectionData = fullData[section.id as keyof TranscribeMedicalInterviewOutput];
-      const newContent = newSectionData ? formatContent(newSectionData) : '';
-      
-      // Update content only if there is new content from the transcription for that section
-      if (newContent) {
-        return { ...section, content: newContent };
-      }
-      
-      return section; // Return original section if no new data
+        const newSectionData = fullData[section.id as keyof typeof fullData];
+        // For dynamic forms, the content is directly the value. For fixed schema, we format it.
+        const newContent = isCustomTemplate ? (newSectionData as string || '') : (newSectionData ? formatContent(newSectionData) : '');
+        
+        return newContent ? { ...section, content: newContent } : section;
     });
 
     const updatedForm = { 
@@ -156,7 +154,7 @@ export default function FormPage() {
     };
 
     updateAndSaveForm(updatedForm);
-  };
+};
 
 
   const handleSectionContentChange = (id: string, newContent: string) => {
@@ -179,6 +177,7 @@ export default function FormPage() {
   const handleResetSection = (id: string) => {
     if (!currentForm || !currentForm.templateId) return;
     
+    // Combine default and note templates for searching
     const allTemplates = [defaultTemplates, noteTemplate];
     const baseTemplate = allTemplates.find(t => t.id === currentForm?.templateId);
 
@@ -194,6 +193,16 @@ export default function FormPage() {
                 description: `El contenido de "${originalSection.title}" ha sido restaurado.`,
             });
         }
+    } else {
+        // If it's a custom template, we can't restore from a default.
+        // We'll just clear the content.
+        const newSections = currentForm.sections.map(section =>
+            section.id === id ? { ...section, content: '', summary: '' } : section
+        );
+        updateAndSaveForm({ ...currentForm, sections: newSections });
+        toast({
+            title: 'Sección Limpiada',
+        });
     }
 };
 
@@ -366,6 +375,7 @@ export default function FormPage() {
                   isSaving={isSaving}
                   isEditable={false}
                   isNote={isNoteTemplate}
+                  isCustomTemplate={isCustomTemplate}
                   fullTranscription={fullTranscription}
                 />
               ))}
@@ -376,5 +386,3 @@ export default function FormPage() {
     </div>
   );
 }
-
-    

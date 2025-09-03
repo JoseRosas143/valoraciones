@@ -4,6 +4,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { MedicalSection } from '@/types/medical-form';
 import { transcribeMedicalInterview, TranscribeMedicalInterviewOutput, TranscribeMedicalInterviewInput } from '@/ai/flows/transcribe-medical-interview';
+import { transcribeDynamicForm, TranscribeDynamicFormInput, TranscribeDynamicFormOutput } from '@/ai/flows/transcribe-dynamic-form';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -26,7 +27,7 @@ import {
 interface MedicalFormSectionProps {
   section: MedicalSection;
   onContentChange: (id: string, newContent: string) => void;
-  onAllSectionsContentChange?: (fullData: TranscribeMedicalInterviewOutput) => void;
+  onAllSectionsContentChange?: (fullData: TranscribeMedicalInterviewOutput | TranscribeDynamicFormOutput) => void;
   onReset: (id: string) => void;
   onSummarize: (id: string) => void;
   onSuggestDiagnosis: (id: string) => void;
@@ -42,6 +43,7 @@ interface MedicalFormSectionProps {
   isFirst?: boolean;
   isLast?: boolean;
   isNote?: boolean;
+  isCustomTemplate?: boolean;
   allSections?: MedicalSection[]; // Pass all sections for transcription context
   generalAiPrompt?: string;
   fullTranscription?: string;
@@ -66,6 +68,7 @@ export function MedicalFormSection({
   isFirst,
   isLast,
   isNote = false,
+  isCustomTemplate = false,
   allSections = [],
   generalAiPrompt = '',
   fullTranscription = '',
@@ -100,19 +103,34 @@ export function MedicalFormSection({
         reader.onloadend = async () => {
           const base64Audio = reader.result as string;
           try {
-            const transcriptionInput: TranscribeMedicalInterviewInput = {
-              audioDataUri: base64Audio,
-              generalAiPrompt: generalAiPrompt,
-              sections: allSections.map(s => ({
-                id: s.id,
-                title: s.title,
-                aiPrompt: s.aiPrompt,
-              })),
-            };
-            const result = await transcribeMedicalInterview(transcriptionInput);
-            if (onAllSectionsContentChange) {
-              onAllSectionsContentChange(result);
+            let result: TranscribeMedicalInterviewOutput | TranscribeDynamicFormOutput;
+            
+            const sectionsForAI = allSections.map(s => ({
+              id: s.id,
+              title: s.title,
+              aiPrompt: s.aiPrompt,
+            }));
+
+            if (isCustomTemplate) {
+                 const transcriptionInput: TranscribeDynamicFormInput = {
+                    audioDataUri: base64Audio,
+                    generalAiPrompt: generalAiPrompt,
+                    sections: sectionsForAI,
+                 };
+                 result = await transcribeDynamicForm(transcriptionInput);
+            } else {
+                const transcriptionInput: TranscribeMedicalInterviewInput = {
+                    audioDataUri: base64Audio,
+                    generalAiPrompt: generalAiPrompt,
+                    sections: sectionsForAI,
+                };
+                result = await transcribeMedicalInterview(transcriptionInput);
             }
+            
+            if (onAllSectionsContentChange) {
+                onAllSectionsContentChange(result);
+            }
+
             toast({
               title: 'Transcripción Completa',
               description: 'El formulario ha sido actualizado con la información del audio.',

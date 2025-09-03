@@ -1,6 +1,8 @@
+'use server';
 import { config } from 'dotenv';
 config();
 
 import '@/ai/flows/transcribe-medical-interview.ts';
 import '@/ai/flows/summarize-medical-section.ts';
 import '@/ai/flows/suggest-diagnosis.ts';
+import '@/ai/flows/transcribe-dynamic-form.ts';
